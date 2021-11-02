@@ -1,0 +1,13 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# C extensions
+
+.cache
+*.zip
+*.tgz
+*.model
+*.cc.o
+*.0
+*.p
+.history/*
