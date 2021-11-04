@@ -161,7 +161,7 @@ class GameHistory:
         return self.obs_history
 
     def obs(self, i, extra_len=0, padding=False):
-        # frames = ray.get(self.obs_history)[i:i + self.stacked_observations + extra_len]#@wjc
+        #frames = ray.get(self.obs_history)[i:i + self.stacked_observations + extra_len]#@wjc
         frames = self.obs_history[i:i + self.stacked_observations + extra_len]
         if padding:
             pad_len = self.stacked_observations + extra_len - len(frames)
@@ -192,14 +192,14 @@ class GameHistory:
 
     def game_over(self):
         self.rewards = np.array(self.rewards)
-        # self.obs_history = ray.put(np.array(self.obs_history))
+        #self.obs_history = ray.put(np.array(self.obs_history))
         self.obs_history = np.array(self.obs_history)#@wjc
         self.actions = np.array(self.actions)
         self.child_visits = np.array(self.child_visits)
         self.root_values = np.array(self.root_values)
 
         #@wjc
-        self.legal_actions=np.array(self.legal_actions)
+        self.legal_actions=np.array(self.legal_actions,dtype=object)
 
     def store_search_stats(self, visit_counts, root_value, idx: int = None, set_flag=False):
         if set_flag:

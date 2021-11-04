@@ -5,6 +5,7 @@ import ray
 import math
 import torch
 import random
+from random import randint
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn import L1Loss
@@ -30,7 +31,7 @@ except:
 train_logger = logging.getLogger('train')
 test_logger = logging.getLogger('train_test')
 
-gpu_num=0.2
+gpu_num=0.1
 
 def soft_update(target, source, tau):
     for target_param, param in zip(target.parameters(), source.parameters()):
@@ -983,9 +984,15 @@ class BatchStorage(object):
     def get_len(self):
         return self.batch_queue.qsize()
     def is_full(self):
-        return self.get_len()>=self.threshold
+        if self.get_len()>=self.threshold:
+            print("full",flush=True)
+            return True
+        else:
+            return False
+        #print("full!",flush=True)
+        #return self.get_len()>=self.threshold
 
-@ray.remote(num_gpus=gpu_num)
+@ray.remote(num_gpus=0.08,num_cpus=0.5)
 class BatchWorker(object):
     def __init__(self, worker_id, replay_buffer, storage, batch_storage, config):
         self.worker_id = worker_id
@@ -1047,8 +1054,9 @@ class BatchWorker(object):
                 try:
                     batch = self.make_batch(batch_context, self.config.revisit_policy_search_rate, weights=target_weights, batch_num=2)
                     # print("batch worker finish makeing batch, start to push",flush=True)
-                    if self.batch_storage.is_full():
-                        time.sleep(15)
+                    #if self.batch_storage.is_full():
+                     #   print("{} is sleeping, buffer={}".format(self.worker_id,self.batch_storage.get_len()),flush=True)
+                     #   time.sleep(15)
                     self.batch_storage.push(batch)
                 except:
                     print('=====================>Data is deleted...')
@@ -1163,7 +1171,12 @@ class BatchWorker(object):
                 batch[3].append(re_reward)
                 batch[4].append(re_value)
                 batch[5].append(re_policy)
-
+        elif self.config.reanalyze_part == 'none':
+                re_value, re_reward, re_policy = prepare_multi_target_only_value(game_lst[:], game_pos_lst[:],
+                                                                                 self.config, self.target_model)
+                batch[3].append(re_reward)
+                batch[4].append(re_value)
+                batch[5].append(re_policy)
         else:
             assert self.config.reanalyze_part == 'all'
             re_value, re_reward, re_policy = prepare_multi_target(self.replay_buffer, indices_lst, make_time_lst,
@@ -1217,7 +1230,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     # wait for all replay buffer to be non-empty
     while not (ray.get(replay_buffer.get_total_len.remote()) >= config.start_window_size):
         print("waiting in _train,buffer size ={0} /{1}".format(ray.get(replay_buffer.get_total_len.remote()),config.start_window_size),flush=True)
-        time.sleep(1)
+        time.sleep(0.5)
         pass
     print('in _train, Begin training...')
     shared_storage.set_start_signal.remote()
@@ -1244,7 +1257,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         # before_btch=time.time()
         if batch is None:
             time.sleep(1)#0.3->2
-            print("_train(): waiting batch storage,current batch storage_Size=",batch_storage.get_len(),flush=True)
+            print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),flush=True)
             continue
         # print("making one batch takes: ", time.time()-before_btch,flush=True)
         shared_storage.incr_counter.remote()
@@ -1339,7 +1352,7 @@ def train(config, summary_writer=None, model_path=None):
 
     storage = SharedStorage.remote(model, target_model, latest_model)
 
-    batch_storage = BatchStorage(8, 16)
+    batch_storage = BatchStorage(10, 20)
 
     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
 

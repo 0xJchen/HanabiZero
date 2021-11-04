@@ -8,7 +8,7 @@ from core.utils import make_atari
 from envs import HanabiEnv
 import numpy as np
 class HanabiControlConfig(BaseMuZeroConfig):
-    def __init__(self):
+    def __init__(self,args):
         super(HanabiControlConfig, self).__init__(
             training_steps=1000000,
             last_steps=0,
@@ -17,7 +17,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
             vis_interval=1000,
             test_episodes=28,
             checkpoint_interval=1000,
-            target_model_interval=1000,#changed from 1k @wjc
+            target_model_interval=400,#changed from 1k @wjc
             save_ckpt_interval=10000,
             max_moves=40,#@wjc
             test_max_moves=40,#@wjc
@@ -25,10 +25,10 @@ class HanabiControlConfig(BaseMuZeroConfig):
             discount=0.997,
             dirichlet_alpha=0.3,
             value_delta_max=0.006,
-            num_simulations=50,
-            batch_size=256,
-            td_steps=5,
-            num_actors=2,
+            num_simulations=args.simulations,
+            batch_size=args.batch_size,
+            td_steps=args.td_steps,
+            num_actors=args.actors,
             # network initialization/ & normalization
             gray_scale=False,
             change_temperature=False,
@@ -57,7 +57,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
             consistency_coeff=0,#@wjc
             # coefficient
             reward_loss_coeff=1,
-            value_loss_coeff=0.25,
+            value_loss_coeff=args.val_coeff,
             policy_loss_coeff=1,
             # value reward support
             value_support=DiscreteSupport(-25, 25, delta=1),
@@ -145,16 +145,16 @@ class HanabiControlConfig(BaseMuZeroConfig):
         pass
 
 class HanabiControlConfigFull(BaseMuZeroConfig):
-    def __init__(self):
+    def __init__(self,args):
         super(HanabiControlConfigFull, self).__init__(
             training_steps=1000000,
-            last_steps=0,
-            test_interval=1000,#changed to 1000
+            last_steps=100,
+            test_interval=2000,#changed to 1000
             log_interval=1000,
             vis_interval=1000,
             test_episodes=28,
             checkpoint_interval=1000,
-            target_model_interval=1000,
+            target_model_interval=200,
             save_ckpt_interval=10000,
             max_moves=80,#@wjc
             test_max_moves=80,#@wjc
@@ -162,10 +162,10 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             discount=0.997,
             dirichlet_alpha=0.3,
             value_delta_max=0.006,
-            num_simulations=100,
-            batch_size=128,
-            td_steps=5,
-            num_actors=2,
+            num_simulations=args.simulations,
+            batch_size=args.batch_size,
+            td_steps=args.td_steps,
+            num_actors=args.actors,
             # network initialization/ & normalization
             gray_scale=False,
             change_temperature=False,
@@ -194,7 +194,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             consistency_coeff=0,#@wjc
             # coefficient
             reward_loss_coeff=1,
-            value_loss_coeff=0.25,
+            value_loss_coeff=args.val_coeff,
             policy_loss_coeff=1,
             # value reward support
             value_support=DiscreteSupport(-50, 50, delta=1),
@@ -263,7 +263,8 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             arg={"hanabi_name":self.env_name,"seed":seed}
         else:
             arg={"hanabi_name":self.env_name,"seed":None}
-        print(arg.keys(),flush=True)
+        #print(arg.keys(),flush=True)
+        print("=======================>starting new simulation")
         env=HanabiEnv(arg)
 
         # if seed is not None:

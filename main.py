@@ -75,6 +75,12 @@ if __name__ == '__main__':
     parser.add_argument('--use_critic', action='store_true', default=False,
                         help='use global critic')
 
+    parser.add_argument('--val_coeff', type=float, default='0.25', help='val coeff')
+    parser.add_argument('--td_steps', type=int, default=5, help='td step')
+     
+    parser.add_argument('--actors', type=int, default=2, help='actors')
+    parser.add_argument('--simulations', type=int, default=200, help='simulation')
+    parser.add_argument('--batch_size', type=int, default=256, help='batch size')
     # Process arguments
     args = parser.parse_args()
     args.device = 'cuda' if (not args.no_cuda) and torch.cuda.is_available() else 'cpu'
@@ -83,7 +89,7 @@ if __name__ == '__main__':
 
     if args.opr == 'train':
         ray.init(num_gpus=args.num_gpus, num_cpus=args.num_cpus,
-                 object_store_memory=50*1024*1024*1024)
+                 object_store_memory=200*1024*1024*1024, dashboard_port=8265 )
 		#object_store_memory=150 * 1024 * 1024 * 1024)
     else:
         ray.init()
@@ -107,9 +113,9 @@ if __name__ == '__main__':
     else:
         raise Exception('Invalid --case option')
     if args.env=='Hanabi-Small':
-        muzero_config=HanabiControlConfig()
+        muzero_config=HanabiControlConfig(args)
     elif args.env=='Hanabi-Full':
-        muzero_config=HanabiControlConfigFull()
+        muzero_config=HanabiControlConfigFull(args)
     else:
         print("wrong env name: ",args.env)
         assert False

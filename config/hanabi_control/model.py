@@ -196,16 +196,17 @@ class MuZeroNetFull(BaseMuZeroNet):
         super(MuZeroNetFull, self).__init__(inverse_value_transform, inverse_reward_transform)
         self.state_norm = state_norm
         self.action_space_n = action_space_n
-        self.feature_size = 1024
-        self.hidden_size = 512
+        self.feature_size = 512
+        self.init_size= 1024
+        self.hidden_size = 256
         #print("=================>init muzero net, repr input_size=",input_size,flush=True)
-        self._representation = nn.Sequential(nn.Linear(input_size, self.feature_size//2),
-                                             nn.BatchNorm1d(self.feature_size//2),
+        self._representation = nn.Sequential(nn.Linear(input_size, self.init_size),
+                                             nn.BatchNorm1d(self.init_size),
                                              nn.ReLU(),
-                                             nn.Linear(self.feature_size // 2, self.feature_size // 2),
-                                             nn.BatchNorm1d(self.feature_size // 2),
+                                             nn.Linear(self.init_size, self.feature_size),
+                                             nn.BatchNorm1d(self.feature_size),
                                              nn.ReLU(),
-                                             nn.Linear(self.feature_size//2, self.feature_size),
+                                             nn.Linear(self.feature_size, self.feature_size),
                                              nn.BatchNorm1d(self.feature_size),
                                              nn.ReLU()
                                              )

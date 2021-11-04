@@ -2,7 +2,9 @@
 __pycache__/
 
 # C extensions
-
+*.swp
+*.swo
+*/core.*
 .cache
 *.zip
 *.tgz
