@@ -2,6 +2,9 @@
 __pycache__/
 
 # C extensions
+**/replay/*
+*/replay/*
+**/replay
 *.swp
 *.swo
 */core.*

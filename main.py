@@ -134,10 +134,12 @@ if __name__ == '__main__':
             if args.load_model:
                 assert(os.path.exists(args.model_path))
                 model_path = args.model_path
-                print("============>successfully loaded model", flush=True)
+                print("============>successfully loaded model, path=",model_path, flush=True)
             else:
+                print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5")
                 model_path = None
             #assert False
+            
             model, weights = train(muzero_config, summary_writer, model_path)
             model.set_weights(weights)
             total_steps = muzero_config.training_steps + muzero_config.last_steps

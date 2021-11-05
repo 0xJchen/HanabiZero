@@ -679,7 +679,8 @@ class DataWorker(object):
 
 
 def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_result=False):
-    total_transitions = ray.get(replay_buffer.get_total_len.remote())
+    #total_transitions = ray.get(replay_buffer.get_total_len.remote())
+    total_transitions=0
     obs_batch_ori, action_batch, mask_batch, target_reward, target_value, target_policy, indices, weights_lst, make_time = batch
     # print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
     # [:, 0: config.stacked_observations * 3,:,:]
@@ -1230,7 +1231,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     # wait for all replay buffer to be non-empty
     while not (ray.get(replay_buffer.get_total_len.remote()) >= config.start_window_size):
         print("waiting in _train,buffer size ={0} /{1}".format(ray.get(replay_buffer.get_total_len.remote()),config.start_window_size),flush=True)
-        time.sleep(0.5)
+        time.sleep(1)
         pass
     print('in _train, Begin training...')
     shared_storage.set_start_signal.remote()
@@ -1298,11 +1299,13 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
 
         step_count += 1
         if step_count%100==0:
-            print("===========>100 lr step, cost [{}] s, buffer = {}".format(time.time()-time_100k,ray.get(replay_buffer.get_total_len.remote())),flush=True)
+            #print("===========>100 lr step, cost [{}] s, buffer = {}".format(time.time()-time_100k,ray.get(replay_buffer.get_total_len.remote())),flush=True)
+            print("===========>100 lr step, cost [{}] s".format(time.time()-time_100k),flush=True)
             time_100k=time.time()
         # if(step_count%50==0):
         #     _test(config, shared_storage)
-
+       # if step_count % 100000==0:
+       #    replay_buffer.save_files.remote() 
         if step_count % config.save_ckpt_interval == 0:
             model_path = os.path.join(config.model_dir, 'model_{}.p'.format(step_count))
             torch.save(model.state_dict(), model_path)
