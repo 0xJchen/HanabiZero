@@ -42,7 +42,7 @@ class ReplayBuffer(object):
         self.base_idx = 0
         self._alpha = config.priority_prob_alpha
         # self._beta = config.priority_prob_beta
-        self.transition_top = int(config.transition_num *50* 10 ** 4)#@wjc, changed from 10**6 for testing
+        self.transition_top = int(config.transition_num *20* 10 ** 4)#@wjc, changed from 10**6 for testing
         self.clear_time = 0
 
     def random_init_trajectory(self, num):

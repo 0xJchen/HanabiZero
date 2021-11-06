@@ -154,7 +154,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             vis_interval=1000,
             test_episodes=28,
             checkpoint_interval=1000,
-            target_model_interval=200,
+            target_model_interval=500,
             save_ckpt_interval=10000,
             max_moves=80,#@wjc
             test_max_moves=80,#@wjc

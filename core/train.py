@@ -31,7 +31,7 @@ except:
 train_logger = logging.getLogger('train')
 test_logger = logging.getLogger('train_test')
 
-gpu_num=0.1
+gpu_num=0.08
 
 def soft_update(target, source, tau):
     for target_param, param in zip(target.parameters(), source.parameters()):
@@ -993,7 +993,7 @@ class BatchStorage(object):
         #print("full!",flush=True)
         #return self.get_len()>=self.threshold
 
-@ray.remote(num_gpus=0.08,num_cpus=0.5)
+@ray.remote(num_gpus=0.07,num_cpus=1)
 class BatchWorker(object):
     def __init__(self, worker_id, replay_buffer, storage, batch_storage, config):
         self.worker_id = worker_id
@@ -1251,14 +1251,17 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
             replay_buffer.remove_to_fit.remote()
         # while True:
         #@wjc
-        if step_count%100==0:
-            print("in _train,step={2}: step_count={0}, batch storage size={1} ".format(step_count, batch_storage.get_len(),step_count),flush=True)
-
+        #if step_count%100==0:
+            #print("in _train,step={2}: step_count={0}, batch storage size={1} ".format(step_count, batch_storage.get_len(),step_count),flush=True)
+            
+        #    print("in _train,step={}:  ".format(step_count),flush=True)
+            
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
-            time.sleep(1)#0.3->2
-            print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),flush=True)
+            time.sleep(0.5)#0.3->2
+            #print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),flush=True)
+            print("_train(): waiting batch storage,step=",step_count,flush=True)
             continue
         # print("making one batch takes: ", time.time()-before_btch,flush=True)
         shared_storage.incr_counter.remote()
@@ -1298,10 +1301,12 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
             _log(config, step_count, log_data[0:3], model, replay_buffer, lr, shared_storage, summary_writer, vis_result)
 
         step_count += 1
-        if step_count%100==0:
+        if step_count%500==0:
             #print("===========>100 lr step, cost [{}] s, buffer = {}".format(time.time()-time_100k,ray.get(replay_buffer.get_total_len.remote())),flush=True)
-            print("===========>100 lr step, cost [{}] s".format(time.time()-time_100k),flush=True)
+            print("===========>500 lr step, cost [{}] s".format(time.time()-time_100k),flush=True)
             time_100k=time.time()
+            if step_count % 5000 ==0:
+                print("buffer transitions=",ray.get(replay_buffer.get_total_len.remote()),flush=True)
         # if(step_count%50==0):
         #     _test(config, shared_storage)
        # if step_count % 100000==0:
@@ -1355,7 +1360,7 @@ def train(config, summary_writer=None, model_path=None):
 
     storage = SharedStorage.remote(model, target_model, latest_model)
 
-    batch_storage = BatchStorage(10, 20)
+    batch_storage = BatchStorage(20, 40)
 
     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
 
