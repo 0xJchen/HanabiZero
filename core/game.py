@@ -201,7 +201,10 @@ class GameHistory:
 
         #@wjc
         self.legal_actions=np.array(self.legal_actions,dtype=object)
-
+        #try:
+         #   print("reward={},obs={},action={},legal={}".format(self.rewards.shape,ray.get(self.obs_history).shape,self.actions.shape,self.legal_actions.shape),flush=True)
+        #except:
+        #    print("gg")
     def store_search_stats(self, visit_counts, root_value, idx: int = None, set_flag=False):
         if set_flag:
             self.child_visits.setflags(write=1)
