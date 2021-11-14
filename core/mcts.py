@@ -51,7 +51,7 @@ class MCTS(object):
                 policy_logits_pool = network_output.policy_logits
                 nan_part = np.isnan(policy_logits_pool)
                 if nan_part.any():
-                    print('[ERROR]: NAN in scalar!!!')
+                    print('=========>mcts,[ERROR]: NAN in scalar!!!',flush=True)
                 policy_logits_pool[nan_part] = 0.
                 policy_logits_pool = policy_logits_pool.tolist()
                 # print('predicted reward: {} and value: {}'.format(reward_pool, value_pool))

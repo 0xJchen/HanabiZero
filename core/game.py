@@ -85,7 +85,7 @@ class GameHistory:
         self.legal_actions = []
 
         assert len(init_observations) == self.stacked_observations
-
+        #print("len of init",len(init_observations),flush=True)
         for observation in init_observations:
             self.obs_history.append(copy.deepcopy(observation))
 
@@ -155,14 +155,15 @@ class GameHistory:
         self.rewards.append(reward)
 
         #@wjc
+        #print("***before",self.legal_actions,flush=True)
         self.legal_actions.append(legal_action)
-
+        #print("***after",self.legal_actions,flush=True)
     def obs_object(self):
         return self.obs_history
 
     def obs(self, i, extra_len=0, padding=False):
-        #frames = ray.get(self.obs_history)[i:i + self.stacked_observations + extra_len]#@wjc
-        frames = self.obs_history[i:i + self.stacked_observations + extra_len]
+        frames = ray.get(self.obs_history)[i:i + self.stacked_observations + extra_len]#@wjc
+        #frames = self.obs_history[i:i + self.stacked_observations + extra_len]
         if padding:
             pad_len = self.stacked_observations + extra_len - len(frames)
             if pad_len > 0:
@@ -192,8 +193,8 @@ class GameHistory:
 
     def game_over(self):
         self.rewards = np.array(self.rewards)
-        #self.obs_history = ray.put(np.array(self.obs_history))
-        self.obs_history = np.array(self.obs_history)#@wjc
+        self.obs_history = ray.put(np.array(self.obs_history))
+        #self.obs_history = np.array(self.obs_history)#@wjc
         self.actions = np.array(self.actions)
         self.child_visits = np.array(self.child_visits)
         self.root_values = np.array(self.root_values)
@@ -271,7 +272,7 @@ def prepare_multi_target_only_value(games, state_index_lst, config, model):
             beg_index = m_batch * i
             end_index = m_batch * (i + 1)
             m_obs = obs_lst[beg_index:end_index]
-            
+
             if config.image_based:
                 m_obs = torch.from_numpy(m_obs).to(device).float() / 255.0#no divice 255
             else:
@@ -358,7 +359,6 @@ def prepare_multi_target(replay_buffer, indices, make_time, games, state_index_l
                     obs = zero_obs
 
                 obs_lst.append(obs)
-        # print("a",flush=True)
         batch_num = len(obs_lst)
         obs_lst = prepare_observation_lst(obs_lst, image_based=config.image_based)#unchanged for state-based
         m_batch = config.target_infer_size
@@ -383,7 +383,6 @@ def prepare_multi_target(replay_buffer, indices, make_time, games, state_index_l
                 m_output = model.initial_inference(m_obs)
 
             network_output.append(m_output)
-        # print("aa",flush=True)
         value_lst = concat_output_value(network_output)
         value_lst = value_lst.reshape(-1) * config.discount ** config.td_steps
         # get last value
@@ -411,14 +410,21 @@ def prepare_multi_target(replay_buffer, indices, make_time, games, state_index_l
 
             batch_values.append(target_values)
             batch_rewards.append(target_rewards)
-        # print("aaa",flush=True)
-        # for policy    
+        # for policy
         obs_lst = []
+
+        legal_action_lst=[]
+
         policy_mask = []  # 0 -> out of traj, 1 -> new policy
+        #assert False
         for game, state_index in zip(games, state_index_lst):
             traj_len = len(game)
 
             game_obs = game.obs(state_index, config.num_unroll_steps)
+
+            #legal_action_lst.append(game.legal_actions[state_index])
+            #print("state idx={},len={}, legal={},game_legal_action={}".format(state_index,len(state_index_lst),np.array(game.legal_actions[state_index]).shape,np.array(game.legal_actions).shape))
+            #print("legal:",game.legal_actions[state_index])
             for current_index in range(state_index, state_index + config.num_unroll_steps + 1):
 
                 if current_index < traj_len:
@@ -428,19 +434,27 @@ def prepare_multi_target(replay_buffer, indices, make_time, games, state_index_l
                     end_index = beg_index + config.stacked_observations
                     obs = game_obs[beg_index:end_index]
                     # assert (np.array(obs) == np.array(game.obs(current_index))).all()
+                    legal_action_lst.append(game.legal_actions[current_index])
                 else:
                     policy_mask.append(0)
                     obs = zero_obs
+                    legal_action_lst.append([0 for _ in range(config.action_space_size)])
                 obs_lst.append(obs)
 
-        # print("aaaa",flush=True)
+                #print("state_idx={},obs={},obs_lst={}".format(state_index,len(obs),len(obs_lst)),flush=True)
+        #print("====>all legal action",np.array(legal_action_lst).shape,flush=True)
         batch_num = len(obs_lst)
         obs_lst = prepare_observation_lst(obs_lst, image_based=config.image_based)
+        legal_action_lst=np.array(legal_action_lst)
         m_batch = config.target_infer_size
         slices = batch_num // m_batch
         if m_batch * slices < batch_num:
             slices += 1
         network_output = []
+
+        #legal_a=[]
+#slice=6,batch_num=378,m_batch=64
+        #print("slice={},batch_num={},m_batch={}".format(slices,batch_num,m_batch),flush=True)
         for i in range(slices):
             beg_index = m_batch * i
             end_index = m_batch * (i + 1)
@@ -455,26 +469,30 @@ def prepare_multi_target(replay_buffer, indices, make_time, games, state_index_l
             else:
                 m_output = model.initial_inference(m_obs)
             network_output.append(m_output)
-        # print("aaaaa",flush=True)
+
+        #    legal_a.append(legal_action_lst[beg_index:end_index])
+
+         #   print("slice shape",i, np.array(legal_action_lst[beg_index:end_index]).shape,flush=True)
+
+        #print("finish slice",flush=True)
         _, reward_pool, policy_logits_pool, hidden_state_roots = concat_output(network_output)
         reward_pool = reward_pool.squeeze().tolist()
-        # print("policy logits pool shape,",len(policy_logits_pool),policy_logits_pool[0].shape,flush=True)
+        #print("policy logits pool shape,",len(policy_logits_pool),policy_logits_pool[0].shape,flush=True)
         policy_logits_pool = policy_logits_pool.tolist()
 
         roots = Roots(len(obs_lst), config.action_space_size, config.num_simulations)
-        noises = [np.random.dirichlet([config.root_dirichlet_alpha] * config.action_space_size).astype(np.float32).tolist() for _ in range(len(obs_lst))]
-        
-        mock_legal_actions=[np.ones(20).astype(int) for _ in range(len(policy_logits_pool))]
-
+        #mask noise
+        noises = [(np.random.dirichlet([config.root_dirichlet_alpha] * config.action_space_size).astype(np.float32) * np.array(legal_action_lst[idx]) ).tolist() for idx in range(len(obs_lst))]
+        #mock_legal_actions=[np.ones(20).astype(int) for _ in range(len(policy_logits_pool))]
+        mock_legal_actions=[np.array(i).astype(int) for i in legal_action_lst]
         roots.prepare(config.root_exploration_fraction, noises, reward_pool, policy_logits_pool,mock_legal_actions)
-        
+
         MCTS(config).run_multi(roots, model, hidden_state_roots)
 
         roots_distributions = roots.get_distributions()
         roots_values = roots.get_values()
         policy_index = 0
         game_idx_lst, current_index_lsts, distributions_lsts, value_lsts, make_times = [], [], [], [], []
-        # print("bb",flush=True)
         for game, state_index, game_idx, mt in zip(games, state_index_lst, indices, make_time):
             target_policies = []
 
@@ -504,7 +522,6 @@ def prepare_multi_target(replay_buffer, indices, make_time, games, state_index_l
                 distributions_lsts.append(distributions_lst)
                 value_lsts.append(value_lst)
                 make_times.append(make_time_lst)
-        # print("aa aa aa",flush=True)
         if config.write_back:
             replay_buffer.update_games.remote(game_idx_lst, current_index_lsts, distributions_lsts, value_lsts, make_times)
 

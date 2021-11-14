@@ -44,7 +44,7 @@ class DynamicNet(nn.Module):
 
         self.fc3 = nn.Linear(state_dim, state_dim)
         self.bn3 = nn.BatchNorm1d(state_dim)
-        
+
     def forward(self, state_action):
         state = state_action[:, :self.state_dim]
         x = self.fc1(state_action)
@@ -71,7 +71,7 @@ class MuZeroNet(BaseMuZeroNet):
         self.action_space_n = action_space_n
         self.feature_size = 512
         self.hidden_size = 128
-        print("=================>init muzero net, repr input_size=",input_size,flush=True)
+        #print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
         self._representation = nn.Sequential(nn.Linear(input_size, self.feature_size//2),
                                              nn.BatchNorm1d(self.feature_size//2),
                                              nn.ReLU(),
@@ -199,7 +199,7 @@ class MuZeroNetFull(BaseMuZeroNet):
         self.feature_size = 512
         self.init_size= 1024
         self.hidden_size = 256
-        #print("=================>init muzero net, repr input_size=",input_size,flush=True)
+        #print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
         self._representation = nn.Sequential(nn.Linear(input_size, self.init_size),
                                              nn.BatchNorm1d(self.init_size),
                                              nn.ReLU(),

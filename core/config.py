@@ -66,10 +66,14 @@ class BaseMuZeroConfig(object):
                  policy_loss_coeff: float = 1,
                  consistency_coeff: float = 0,#@wjc
                  reg_loss_coeff: float = 1e-4,
+                 debug_batch: bool = False,
+                 debug_interval: int = 100,
                  value_support: DiscreteSupport = None,
                  reward_support: DiscreteSupport = None):
 
         # Self-Play
+        self.debug_batch = debug_batch
+        self.debug_interval = debug_interval
         self.action_space_size = None
         self.num_actors = num_actors
         self.gray_scale = gray_scale
@@ -208,6 +212,7 @@ class BaseMuZeroConfig(object):
         value_support = torch.ones(value_probs.shape)
         value_support[:, :] = torch.from_numpy(np.array([x for x in scalar_support.range]))
         value_support = value_support.to(device=value_probs.device)
+        #print("in inverse transform: ",value_support.shape,value_probs.shape,flush=True)
         value = (value_support * value_probs).sum(1, keepdim=True) / delta
 
         epsilon = 0.001
@@ -218,7 +223,7 @@ class BaseMuZeroConfig(object):
 
         nan_part = torch.isnan(output)
         if nan_part.any():
-            print('[ERROR]: NAN in scalar!!!')
+            print('===========> in scalar transform [ERROR]: NAN in scalar!!!',flush=True)
         output[nan_part] = 0.
         return output
 

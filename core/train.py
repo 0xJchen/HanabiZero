@@ -31,7 +31,7 @@ except:
 train_logger = logging.getLogger('train')
 test_logger = logging.getLogger('train_test')
 
-gpu_num=0.08
+gpu_num=0.07
 
 def soft_update(target, source, tau):
     for target_param, param in zip(target.parameters(), source.parameters()):
@@ -380,7 +380,10 @@ class DataWorker(object):
                     o,a=env.reset()
 
                     init_obses.append(o)
+                    #print("rest game: init actions=",a,flush=True)
                     init_legal_action.append(a)
+
+                #assert False
 
                 dones = np.array([False for _ in range(env_nums)])
                 game_histories = [GameHistory(envs[_].env.action_space, max_length=self.config.history_length,
@@ -394,7 +397,7 @@ class DataWorker(object):
                 for i in range(env_nums):
                     stack_obs_windows[i] = [init_obses[i] for _ in range(self.config.stacked_observations)]
                     game_histories[i].init(stack_obs_windows[i],init_legal_action[i])
-
+                    #print("after init: ",game_histories[i].legal_actions,flush=True)
                 # this the root value of MCTS
                 search_values_lst = [[] for _ in range(env_nums)]
                 # predicted value of target network
@@ -537,7 +540,10 @@ class DataWorker(object):
 
                     #@wjc
                     stack_legal_actions=[game_history.legal_actions[-1] for game_history in game_histories]
-
+                    #test legal action
+                    #for tt in range(len(game_histories)):
+                        #print("======================================")
+                        #print(game_histories[tt].legal_actions,flush=True)
                     if self.config.amp_type == 'torch_amp':
                         with autocast():
                             network_output = model.initial_inference(stack_obs.float())
@@ -604,10 +610,11 @@ class DataWorker(object):
                         #@wjc
                         #now stack_legal_actions' input is numpy array
                         # del stack_legal_actions[i][0]
-                        stack_legal_actions[i].append(legal_action) #seems to be useless
+                        #stack_legal_actions[i].append(legal_action) #seems to be useless
 
                         # if game history is full
                         if game_histories[i].is_full():
+                            assert False
                             # pad over last block trajectory
                             if last_game_histories[i] is not None:
                                 self.put_last_trajectory(i, last_game_histories, last_game_priorities, game_histories)
@@ -975,6 +982,8 @@ class BatchStorage(object):
     def push(self, batch):
         if self.batch_queue.qsize() <= self.threshold:
             self.batch_queue.put(batch)
+        else:
+            print("full",flush=True)
 
     def pop(self):
         if self.batch_queue.qsize() > 0:
@@ -993,7 +1002,7 @@ class BatchStorage(object):
         #print("full!",flush=True)
         #return self.get_len()>=self.threshold
 
-@ray.remote(num_gpus=0.07,num_cpus=1)
+@ray.remote(num_gpus=gpu_num,num_cpus=1)
 class BatchWorker(object):
     def __init__(self, worker_id, replay_buffer, storage, batch_storage, config):
         self.worker_id = worker_id
@@ -1010,7 +1019,7 @@ class BatchWorker(object):
         self.target_model.eval()
 
         self.last_model_index = -1
-        self.batch_max_num = 20
+        self.batch_max_num = 40#from 20
         self.beta_schedule = LinearSchedule(config.training_steps + config.last_steps, initial_p=config.priority_prob_beta, final_p=1.0)
 
     def run(self):
@@ -1059,9 +1068,10 @@ class BatchWorker(object):
                      #   print("{} is sleeping, buffer={}".format(self.worker_id,self.batch_storage.get_len()),flush=True)
                      #   time.sleep(15)
                     self.batch_storage.push(batch)
+                    #time.sleep(randint(1,4))
                 except:
                     print('=====================>Data is deleted...')
-                    assert False
+                    #assert False
 
     def split_context(self, batch_context, split_num):#game_lst, game_pos_lst, indices_lst, weights_lst, make_time_lst = batch_context
         batch_context_lst = []
@@ -1138,13 +1148,13 @@ class BatchWorker(object):
             # print("44",flush=True)
             _actions += [np.random.randint(0, game.action_space_size) for _ in range(self.config.num_unroll_steps - len(_actions))]
             # print("55",flush=True)
-            try:
+            #try:
                 # game_lst[i]
                 # print("game_lst-i ",game_lst[i],flush=True)
                 # print()
-                obs_lst.append(game_lst[i].obs(game_pos_lst[i], extra_len=self.config.num_unroll_steps, padding=True))#<===== problem
-            except:
-                assert False
+            obs_lst.append(game_lst[i].obs(game_pos_lst[i], extra_len=self.config.num_unroll_steps, padding=True))#<===== problem
+            #except:
+            #    assert False
 
             # print("66",flush=True)
             action_lst.append(_actions)
@@ -1243,25 +1253,28 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
 
     recent_weights = model.get_weights()
     time_100k=time.time()
+    _interval=config.debug_interval
+    _debug_batch=config.debug_batch
     while step_count < config.training_steps + config.last_steps:
 
         # @profile
         # def f(batch_count, step_count, lr, make_time):
-        if step_count % 50 == 0:#@wjc changed to 100 for debugging
+        if step_count % 500 == 0:#@wjc changed to 100 for debugging
             replay_buffer.remove_to_fit.remote()
         # while True:
         #@wjc
         #if step_count%100==0:
             #print("in _train,step={2}: step_count={0}, batch storage size={1} ".format(step_count, batch_storage.get_len(),step_count),flush=True)
-            
+
         #    print("in _train,step={}:  ".format(step_count),flush=True)
-            
+
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
-            time.sleep(0.5)#0.3->2
-            #print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),flush=True)
-            print("_train(): waiting batch storage,step=",step_count,flush=True)
+            time.sleep(0.1)#0.3->2
+            #print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),config.debug_batch,flush=True)
+            if _debug_batch:
+                print("_train(): waiting batch storage,step=",step_count,flush=True)
             continue
         # print("making one batch takes: ", time.time()-before_btch,flush=True)
         shared_storage.incr_counter.remote()
@@ -1301,16 +1314,20 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
             _log(config, step_count, log_data[0:3], model, replay_buffer, lr, shared_storage, summary_writer, vis_result)
 
         step_count += 1
-        if step_count%500==0:
+     #   if config.debug_batch:
+    #        _interval=config.debug_interval
+
+        if step_count%_interval==0:
             #print("===========>100 lr step, cost [{}] s, buffer = {}".format(time.time()-time_100k,ray.get(replay_buffer.get_total_len.remote())),flush=True)
-            print("===========>500 lr step, cost [{}] s".format(time.time()-time_100k),flush=True)
+            _time=time.time()-time_100k
+            print("===========>{} lr step, cost [{}] s; <==>[{}] s/100lr".format(_interval,_time,_time/(_interval/500)),flush=True)
             time_100k=time.time()
-            if step_count % 5000 ==0:
-                print("buffer transitions=",ray.get(replay_buffer.get_total_len.remote()),flush=True)
+        #    if step_count % 1000 ==0:
+        #        print("buffer transitions=",ray.get(replay_buffer.get_total_len.remote()),flush=True)
         # if(step_count%50==0):
         #     _test(config, shared_storage)
        # if step_count % 100000==0:
-       #    replay_buffer.save_files.remote() 
+       #    replay_buffer.save_files.remote()
         if step_count % config.save_ckpt_interval == 0:
             model_path = os.path.join(config.model_dir, 'model_{}.p'.format(step_count))
             torch.save(model.state_dict(), model_path)
@@ -1360,7 +1377,7 @@ def train(config, summary_writer=None, model_path=None):
 
     storage = SharedStorage.remote(model, target_model, latest_model)
 
-    batch_storage = BatchStorage(20, 40)
+    batch_storage = BatchStorage(30, 50)
 
     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
 

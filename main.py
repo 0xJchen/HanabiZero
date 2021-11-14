@@ -77,11 +77,13 @@ if __name__ == '__main__':
 
     parser.add_argument('--val_coeff', type=float, default='0.25', help='val coeff')
     parser.add_argument('--td_steps', type=int, default=5, help='td step')
-     
+
     parser.add_argument('--actors', type=int, default=2, help='actors')
     parser.add_argument('--simulations', type=int, default=200, help='simulation')
     parser.add_argument('--batch_size', type=int, default=256, help='batch size')
+    parser.add_argument('--debug_batch', action='store_true', default=False, help='show empty batch steps')
     # Process arguments
+    parser.add_argument('--debug_interval', type=int, default=500, help='show batch time interval')
     args = parser.parse_args()
     args.device = 'cuda' if (not args.no_cuda) and torch.cuda.is_available() else 'cpu'
     assert args.revisit_policy_search_rate is None or 0 <= args.revisit_policy_search_rate <= 1, \
@@ -89,7 +91,8 @@ if __name__ == '__main__':
 
     if args.opr == 'train':
         ray.init(num_gpus=args.num_gpus, num_cpus=args.num_cpus,
-                 object_store_memory=200*1024*1024*1024, dashboard_port=8265 )
+              object_store_memory=200*1024*1024*1024,dashboard_port=8267, dashboard_host='0.0.0.0')
+                #   object_store_memory=200*1024*1024*1024, dashboard_port=9999,dashboard_host='0.0.0.0'  )
 		#object_store_memory=150 * 1024 * 1024 * 1024)
     else:
         ray.init()
@@ -109,7 +112,7 @@ if __name__ == '__main__':
     elif args.case == 'classic_control':
         from config.classic_control import muzero_config
     elif args.case == 'hanabi':
-        from config.hanabi_control import HanabiControlConfig,HanabiControlConfigFull 
+        from config.hanabi_control import HanabiControlConfig,HanabiControlConfigFull
     else:
         raise Exception('Invalid --case option')
     if args.env=='Hanabi-Small':
@@ -139,7 +142,7 @@ if __name__ == '__main__':
                 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5")
                 model_path = None
             #assert False
-            
+
             model, weights = train(muzero_config, summary_writer, model_path)
             model.set_weights(weights)
             total_steps = muzero_config.training_steps + muzero_config.last_steps
@@ -168,7 +171,7 @@ if __name__ == '__main__':
             for idx in range(args.test_begin,args.test_end+1):
                 model_path=parent_model_path+"/model_"+str(int(idx*10000))+".p"
                 assert os.path.exists(model_path), 'model not found at {}'.format(model_path)
-                
+
                 model = muzero_config.get_uniform_network().to('cuda')
                 # for name, param in model.named_parameters():
                 #     print(name,param.shape)

@@ -6,9 +6,9 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 #python main.py --env KangarooNoFrameskip-v4 --case atari --opr train --seed 0 --num_gpus 3 --num_cpus 60 --force --batch_actor 28 \
 #python main.py --env KangarooNoFrameskip-v4 --case atari --opr train --seed 0 --num_gpus 4 --num_cpus 48 --force --batch_actor 42 \
-python3 ../main.py --env Hanabi-Full --case hanabi --opr train --seed 1 --num_gpus 4 --num_cpus 60 --force --batch_actor 42 \
+python3 ../main.py --env Hanabi-Full --case hanabi --opr train --seed 1 --num_gpus 4 --num_cpus 50 --force --batch_actor 30 \
   --p_mcts_num 8\
-  --extra full_2p_test\
+  --extra full_2p_test_less_print\
   --use_priority \
   --use_max_priority \
   --revisit_policy_search_rate 0.99 \
@@ -17,7 +17,9 @@ python3 ../main.py --env Hanabi-Full --case hanabi --opr train --seed 1 --num_gp
   --info 'full_2_player_share_new_model_1024_512_512_no_get_fixed' \
   --actors 2 \
   --simulations 100 \
-  --batch_size 256
+  --batch_size 256 \
+  #--debug_batch \
+  #--debug_interval 100
 #  --load_model \
 #  --model_path 'results/models/model_tst.p' \
 

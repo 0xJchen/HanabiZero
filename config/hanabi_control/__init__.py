@@ -86,16 +86,16 @@ class HanabiControlConfig(BaseMuZeroConfig):
         print("==>setting env = ",env_name)
         self.env_name = env_name
         game = self.new_game()
-        
+
         reset_obs,_=game.reset()
         reset_obs=np.asarray(reset_obs)
         # print("in set_game",reset_obs.shape)
         self.obs_shape = reset_obs.shape[0] * self.stacked_observations
         self.action_space_size = game.action_space_size
-
+        print("action space =",self.action_space_size,flush=True)
     def get_uniform_network(self):
         # print("obs shape,",self.obs_shape,self.action_space_size, len(self.new_game().reset()[0]))
-        
+
         if self.env_name=='Hanabi-Small':
             return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
                          self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm)
@@ -149,11 +149,11 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
         super(HanabiControlConfigFull, self).__init__(
             training_steps=1000000,
             last_steps=100,
-            test_interval=2000,#changed to 1000
-            log_interval=1000,
-            vis_interval=1000,
+            test_interval=4000,#changed to 1000
+            log_interval=2000,
+            vis_interval=2000,
             test_episodes=28,
-            checkpoint_interval=1000,
+            checkpoint_interval=2000,
             target_model_interval=500,
             save_ckpt_interval=10000,
             max_moves=80,#@wjc
@@ -183,7 +183,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             lr_decay_rate=0.1,
             lr_decay_steps=1000000,
             # replay window
-            start_window_size=3,#@wjc mannualy changed to 1 for debugging
+            start_window_size=2,#@wjc mannualy changed to 1 for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation
@@ -196,7 +196,9 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             reward_loss_coeff=1,
             value_loss_coeff=args.val_coeff,
             policy_loss_coeff=1,
-            # value reward support
+            debug_batch=args.debug_batch,
+            debug_interval=args.debug_interval,
+        # value reward support
             value_support=DiscreteSupport(-50, 50, delta=1),
             reward_support=DiscreteSupport(-50, 50, delta=1))#@wjc what?
 
@@ -223,7 +225,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
         print("==>setting env = ",env_name)
         self.env_name = env_name
         game = self.new_game()
-        
+
         reset_obs,_=game.reset()
         reset_obs=np.asarray(reset_obs)
         # print("in set_game",reset_obs.shape)
@@ -232,7 +234,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
 
     def get_uniform_network(self):
         # print("obs shape,",self.obs_shape,self.action_space_size, len(self.new_game().reset()[0]))
-        
+
         if self.env_name=='Hanabi-Small':
             assert False
             return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
@@ -246,6 +248,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             # return MuZeroNet(self.obs_shape, self.action_space_size, 2 * self.reward_support + 1, 2 * self.value_support + 1,
         #                  self.inverse_value_transform, self.inverse_reward_transform)
 
+        print("action space =",self.action_space_size,flush=True)
     def new_game(self, seed=None, save_video=False, save_path=None, video_callable=None, uid=None, test=False, final_test=False):
         # if test:
         #     if final_test:
@@ -264,7 +267,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
         else:
             arg={"hanabi_name":self.env_name,"seed":None}
         #print(arg.keys(),flush=True)
-        print("=======================>starting new simulation")
+        #print("=======================>starting new simulation")
         env=HanabiEnv(arg)
 
         # if seed is not None:

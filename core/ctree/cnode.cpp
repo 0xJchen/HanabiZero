@@ -24,7 +24,8 @@ namespace tree{
         this->best_action = -1;
 
         this->visit_count = 0;
-        this->value_sum = 0;
+        //this->visit_count = 1; 
+	this->value_sum = 0;
         this->to_play = 0;
         this->reward = 0.0;
         this->ptr_node_pool = nullptr;
@@ -35,7 +36,8 @@ namespace tree{
         this->action_num = action_num;
 
         this->visit_count = 0;
-        this->value_sum = 0;
+        //this->visit_count = 1;
+	this->value_sum = 0;
         this->best_action = -1;
         this->to_play = 0;
         this->reward = 0.0;
