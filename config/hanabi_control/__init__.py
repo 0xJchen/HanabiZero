@@ -17,12 +17,12 @@ class HanabiControlConfig(BaseMuZeroConfig):
             vis_interval=1000,
             test_episodes=28,
             checkpoint_interval=1000,
-            target_model_interval=400,#changed from 1k @wjc
+            target_model_interval=200,#changed from 1k @wjc
             save_ckpt_interval=10000,
             max_moves=40,#@wjc
             test_max_moves=40,#@wjc
             history_length=12001,#changed to 80 from 12001
-            discount=0.997,
+            discount=0.999,#from 0.997
             dirichlet_alpha=0.3,
             value_delta_max=0.006,
             num_simulations=args.simulations,
@@ -40,11 +40,11 @@ class HanabiControlConfig(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.01,
+            lr_warm_up=args.lr,
             lr_type='step',
-            lr_init=0.1,
+            lr_init=args.lr,
             lr_decay_rate=0.1,
-            lr_decay_steps=1000000,
+            lr_decay_steps=10000000,
             # replay window
             start_window_size=2,#@wjc mannualy changed to 1 for debugging
             window_size=125000,#useless
@@ -54,7 +54,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
             stacked_observations=4,#changed to 0
             # spr
             consist_type='spr',
-            consistency_coeff=0,#@wjc
+            consistency_coeff=args.const,#@wjc
             # coefficient
             reward_loss_coeff=1,
             value_loss_coeff=args.val_coeff,
@@ -66,7 +66,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
         self.discount **= self.frame_skip
         # self.max_moves //= self.frame_skip#@wjc max move should just be 80
         # self.test_max_moves //= self.frame_skip
-
+        self.const=args.const
         self.start_window_size = self.start_window_size * 1000 // self.frame_skip#whta fuck?
         self.start_window_size = max(1, self.start_window_size)
         self.image_channel = 1
@@ -97,7 +97,11 @@ class HanabiControlConfig(BaseMuZeroConfig):
         # print("obs shape,",self.obs_shape,self.action_space_size, len(self.new_game().reset()[0]))
 
         if self.env_name=='Hanabi-Small':
-            return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
+            if self.const>0:
+                return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
+                         self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm, proj=True)
+            else:
+                return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
                          self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm)
         #elif self.env_name='Hanabi-Full':
          #   return MuZeroNetFull(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
@@ -154,12 +158,12 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             vis_interval=2000,
             test_episodes=28,
             checkpoint_interval=2000,
-            target_model_interval=500,
+            target_model_interval=200,
             save_ckpt_interval=10000,
             max_moves=80,#@wjc
             test_max_moves=80,#@wjc
             history_length=12001,#changed to 80 from 12001
-            discount=0.997,
+            discount=0.999,#changed from 0.997
             dirichlet_alpha=0.3,
             value_delta_max=0.006,
             num_simulations=args.simulations,
@@ -181,9 +185,9 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             lr_type='step',
             lr_init=0.1,
             lr_decay_rate=0.1,
-            lr_decay_steps=1000000,
+            lr_decay_steps=10000000,
             # replay window
-            start_window_size=2,#@wjc mannualy changed to 1 for debugging
+            start_window_size=5,#@wjc mannualy changed to 1 for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation

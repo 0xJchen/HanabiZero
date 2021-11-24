@@ -20,7 +20,7 @@ from .replay_buffer import ReplayBuffer
 from .test import test
 from .utils import select_action, profile, prepare_observation_lst, LinearSchedule
 from .vis import show_tree
-from .game import GameHistory, prepare_multi_target, prepare_multi_target_only_value
+from .game import GameHistory, prepare_multi_target, prepare_multi_target_only_value, prepare_multi_target_none
 import time
 import numpy as np
 try:
@@ -300,6 +300,7 @@ class DataWorker(object):
         end_index = beg_index + self.config.num_unroll_steps
 
         pad_obs_lst = game_histories[i].obs_history[beg_index:end_index]
+        pad_legal_a= game_histories[i].legal_actions[beg_index:end_index]
         pad_child_visits_lst = game_histories[i].child_visits[beg_index:end_index]
 
         beg_index = 0
@@ -313,7 +314,7 @@ class DataWorker(object):
         pad_root_values_lst = game_histories[i].root_values[beg_index:end_index]
 
         # pad over and save
-        last_game_histories[i].pad_over(pad_obs_lst, pad_reward_lst, pad_root_values_lst, pad_child_visits_lst)
+        last_game_histories[i].pad_over(pad_obs_lst, pad_reward_lst, pad_root_values_lst, pad_child_visits_lst, pad_legal_a)
         last_game_histories[i].game_over()
 
         self.put((last_game_histories[i], last_game_priorities[i]))
@@ -577,7 +578,9 @@ class DataWorker(object):
                         # print("before select action: ",len(stack_legal_actions))
                         action, visit_entropy = select_action(distributions, temperature=temperature, deterministic=deterministic, legal_actions=stack_legal_actions[i])
                         obs, ori_reward, done, info, legal_action = env.step(action)
-                        # print("after step, legal a type",type(legal_action))
+                        #if not np.any(legal_action):
+                        #    print("step:",done,legal_action,flush=True)
+                        #    print("after step, legal a type",type(legal_action))
                         if self.config.clip_reward:
                             clip_reward = np.sign(ori_reward)
                         else:
@@ -1183,11 +1186,12 @@ class BatchWorker(object):
                 batch[4].append(re_value)
                 batch[5].append(re_policy)
         elif self.config.reanalyze_part == 'none':
-                re_value, re_reward, re_policy = prepare_multi_target_only_value(game_lst[:], game_pos_lst[:],
+            #print("gg",flush=True)
+            re_value, re_reward, re_policy = prepare_multi_target_none(game_lst[:], game_pos_lst[:],
                                                                                  self.config, self.target_model)
-                batch[3].append(re_reward)
-                batch[4].append(re_value)
-                batch[5].append(re_policy)
+            batch[3].append(re_reward)
+            batch[4].append(re_value)
+            batch[5].append(re_policy)
         else:
             assert self.config.reanalyze_part == 'all'
             re_value, re_reward, re_policy = prepare_multi_target(self.replay_buffer, indices_lst, make_time_lst,
@@ -1271,7 +1275,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
-            time.sleep(0.1)#0.3->2
+            time.sleep(0.05)#0.3->2
             #print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),config.debug_batch,flush=True)
             if _debug_batch:
                 print("_train(): waiting batch storage,step=",step_count,flush=True)
@@ -1318,7 +1322,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     #        _interval=config.debug_interval
 
         if step_count%_interval==0:
-            #print("===========>100 lr step, cost [{}] s, buffer = {}".format(time.time()-time_100k,ray.get(replay_buffer.get_total_len.remote())),flush=True)
+           # print("===========>100 lr step, cost [{}] s, buffer = {}".format(time.time()-time_100k,ray.get(replay_buffer.get_total_len.remote())),flush=True)
             _time=time.time()-time_100k
             print("===========>{} lr step, cost [{}] s; <==>[{}] s/100lr".format(_interval,_time,_time/(_interval/500)),flush=True)
             time_100k=time.time()

@@ -19,7 +19,7 @@ namespace tree{
     //*********************************************************
 
     CNode::CNode(){
-        this->prior = 0;
+        this->prior = 0.0;
         this->action_num = 0;
         this->best_action = -1;
 
@@ -56,9 +56,26 @@ namespace tree{
 
         int action_num = this->action_num;
         float temp_policy;
-        float policy_sum = 0.0;
+        float policy_sum = 0.0001;
         float policy[action_num];
         float policy_max = FLOAT_MIN;
+        int debug=0;
+
+//std::cout<<"legal actions";
+        //==================================
+        if (debug==1){
+        for(int a =0;a < action_num; ++a){
+            //if (stackLegalActions[a]==1){
+            //    flag=1;
+            //}
+            std::cout<<stackLegalActions[a];
+        }
+        std::cout<<std::endl;
+        }
+        //==================================
+        //if (flag==0){
+         //   printf("all illegal actions\n");
+        //}
         for(int a = 0; a < action_num; ++a){
 
             //@wjc skip illegal
@@ -82,7 +99,10 @@ namespace tree{
             policy_sum += temp_policy;
             policy[a] = temp_policy;
         }
-
+        
+       // if (debug==1){
+       // std::cout<<"policy sum"<<policy_sum;}
+        
         float prior;
         std::vector<CNode>* ptr_node_pool = this->ptr_node_pool;
         for(int a = 0; a < action_num; ++a){
@@ -90,7 +110,7 @@ namespace tree{
 
             //@wjc skip illega
             if (stackLegalActions[a]==0){
-                prior=0;
+                prior=0.0;
             }
             else{
                 prior = policy[a] / policy_sum;
@@ -98,15 +118,27 @@ namespace tree{
 
             int index = ptr_node_pool->size();
             this->children_index.push_back(index);
-
+            if (prior!=prior){
+                printf("nan prior: %f ",prior);
+                debug = 1;
+            }
+            //if (debug==1){
+            //    printf("a=%d, prior=%f  ",a,prior);
+            //}
             ptr_node_pool->push_back(CNode(prior, action_num, ptr_node_pool));
         }
+        
+        
 
-        if(DEBUG_MODE){
+        if(DEBUG_MODE || debug ==1){
             printf("expand prior: [");
             for(int a = 0; a < action_num; ++a){
                 prior = this->get_child(a)->prior;
                 printf("%f, ", prior);
+            }
+            printf("policy sum=%f",policy_sum);
+            for (int a=0; a<action_num;++a){
+                printf("%d",stackLegalActions[a]);
             }
             printf("]\n");
         }
@@ -407,8 +439,10 @@ namespace tree{
         if (value_score < 0) value_score = 0;
         if (value_score > 1) value_score = 1;
 
+        
         float ucb_value = prior_score + value_score;
         if (ucb_value < FLOAT_MIN || ucb_value > FLOAT_MAX || !std::isfinite(ucb_value)){
+            child->print_out();
             printf("[ERROR] Value: value -> %f, min/max Q -> %f/%f, visit count -> %d(%d)\n", child->value(), min_max_stats.minimum, min_max_stats.maximum, parent_visit_count, child->visit_count);
             printf("(prior, value): %f(%f * %f) + %f(%f, [%f, %f]) = %f\n", prior_score, pb_c, child->prior, min_max_stats.normalize(value_score), value_score, min_max_stats.minimum, min_max_stats.maximum, prior_score + min_max_stats.normalize(value_score));
         }

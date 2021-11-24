@@ -76,8 +76,9 @@ if __name__ == '__main__':
                         help='use global critic')
 
     parser.add_argument('--val_coeff', type=float, default='0.25', help='val coeff')
+    parser.add_argument('--lr', type=float, default='0.1', help='learning rate')
     parser.add_argument('--td_steps', type=int, default=5, help='td step')
-
+    parser.add_argument('--const', type=float, default='0.', help='consistent loss')
     parser.add_argument('--actors', type=int, default=2, help='actors')
     parser.add_argument('--simulations', type=int, default=200, help='simulation')
     parser.add_argument('--batch_size', type=int, default=256, help='batch size')
@@ -91,7 +92,7 @@ if __name__ == '__main__':
 
     if args.opr == 'train':
         ray.init(num_gpus=args.num_gpus, num_cpus=args.num_cpus,
-              object_store_memory=200*1024*1024*1024,dashboard_port=8267, dashboard_host='0.0.0.0')
+              object_store_memory=300*1024*1024*1024,dashboard_port=8267, dashboard_host='0.0.0.0')
                 #   object_store_memory=200*1024*1024*1024, dashboard_port=9999,dashboard_host='0.0.0.0'  )
 		#object_store_memory=150 * 1024 * 1024 * 1024)
     else:

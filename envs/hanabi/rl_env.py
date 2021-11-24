@@ -102,7 +102,7 @@ class HanabiEnv(Environment):
           - seed: int, Random seed.
           - random_start_player: bool, Random start player.
     """
-    
+
     if args["seed"]==None:
         seed=0
     else:
@@ -148,7 +148,7 @@ class HanabiEnv(Environment):
                "colors":2,
                "ranks":5,
                "players":2,
-               "hand_size":2, 
+               "hand_size":2,
                "max_information_tokens":3,
                "max_life_tokens":1,
                "observation_type":pyhanabi.AgentObservationType.CARD_KNOWLEDGE.value,
@@ -156,9 +156,9 @@ class HanabiEnv(Environment):
            }
     else:
         raise ValueError("Unknown environment {}".format(args.hanabi_name))
-       
+
     assert isinstance(config, dict), "Expected config to be of type dict."
-    
+
     self.game = pyhanabi.HanabiGame(config)
 
     self.observation_encoder = pyhanabi.ObservationEncoder(
@@ -170,7 +170,7 @@ class HanabiEnv(Environment):
     for i in range(self.players):
         self.action_space.append(Discrete(self.num_moves()))
         self.observation_space.append([self.vectorized_observation_shape()[0]+self.players])
-        self.share_observation_space.append([self.vectorized_share_observation_shape()[0]+self.players]) 
+        self.share_observation_space.append([self.vectorized_share_observation_shape()[0]+self.players])
   def reset(self, choose=True):
     """Resets the environment for a new game.
 
@@ -274,10 +274,10 @@ class HanabiEnv(Environment):
     # available_actions=[0 for i in range(self.num_moves())]
     if choose:
         self.state = self.game.new_initial_state()
-    
+
         while self.state.cur_player() == pyhanabi.CHANCE_PLAYER_ID:
           self.state.deal_random_card()
-    
+
         observation = self._make_observation_all_players()
         observation["current_player"] = self.state.cur_player()
         agent_turn=np.zeros(self.players).astype(np.int).tolist()
@@ -285,8 +285,8 @@ class HanabiEnv(Environment):
         # print("self.state.cur_player(): ",self.state.cur_player())
         # obs=[]
         share_obs=[]
-        available_actions = np.zeros(self.num_moves()) 
-        # for i in range(self.players): 
+        available_actions = np.zeros(self.num_moves())
+        # for i in range(self.players):
         cur_p=self.state.cur_player()
         # print("in reset,",len(observation['player_observations'][cur_p]['vectorized']))
         obs=observation['player_observations'][cur_p]['vectorized']+agent_turn
@@ -295,8 +295,8 @@ class HanabiEnv(Environment):
     else:
         obs = np.zeros((self.vectorized_observation_shape()[0]+self.players))
         share_obs = np.zeros((self.vectozed_share_observation_shape()[0]+self.players))
-        # available_actions = np.zeros(self.num_moves()) 
-    
+        # available_actions = np.zeros(self.num_moves())
+
     # return obs, share_obs, available_actions
     # print("in hanabienv: ",len(obs[0]),len(available_actions),self.vectorized_observation_shape())
     return share_obs[0], list(available_actions)
@@ -440,7 +440,7 @@ class HanabiEnv(Environment):
     elif isinstance(action, int):
       if action == -1:# invalid action
         obs = np.zeros((self.players,self.vectorized_observation_shape()[0]+self.players))
-        share_obs = np.zeros((self.players,self.vectorized_share_observation_shape()[0]+self.players))        
+        share_obs = np.zeros((self.players,self.vectorized_share_observation_shape()[0]+self.players))
         rewards = np.zeros(1)
         done = None
         infos = {'score':self.state.score()}
@@ -448,15 +448,15 @@ class HanabiEnv(Environment):
         assert False
         return obs, share_obs, rewards, done, infos, available_actions
       # Convert int action into a Hanabi move.
-      action = self.game.get_move(action)     
+      action = self.game.get_move(action)
     else:
       raise ValueError("Expected action as dict or int, got: {}".format(
           action))
 
     last_score = self.state.score()
-    # Apply the action to the state.   
+    # Apply the action to the state.
     self.state.apply_move(action)
-    
+
 
     while self.state.cur_player() == pyhanabi.CHANCE_PLAYER_ID:
       self.state.deal_random_card()
@@ -474,15 +474,15 @@ class HanabiEnv(Environment):
     obs=observation['player_observations'][cur_p]['vectorized']+agent_turn
     share_obs.append(observation['player_observations'][cur_p]['vectorized_ownhand']+observation['player_observations'][cur_p]['vectorized']+agent_turn)
     available_actions[observation['player_observations'][self.state.cur_player()]['legal_moves_as_int']]=1
-    
+
     done = self.state.is_terminal()
     # Reward is score differential. May be large and negative at game end.
     rewards = self.state.score() - last_score
     # rewards = reward
     infos = {'score':self.state.score()}
-    # print("obs shape: ", len(share_obs[0]),len(obs),flush=True) 
+    # print("obs shape: ", len(share_obs[0]),len(obs),flush=True)
     return share_obs[0], rewards, done, infos, list(available_actions)
-    #return obs, rewards, done, infos, list(available_actions) 
+    #return obs, rewards, done, infos, list(available_actions)
   def _make_observation_all_players(self):
     """Make observation for all players.
 

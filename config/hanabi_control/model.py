@@ -65,7 +65,7 @@ class DynamicNet(nn.Module):
 
 class MuZeroNet(BaseMuZeroNet):
     def __init__(self, input_size, action_space_n, reward_support_size, value_support_size,
-                 inverse_value_transform, inverse_reward_transform, state_norm=False):
+                 inverse_value_transform, inverse_reward_transform, state_norm=False, proj=False):
         super(MuZeroNet, self).__init__(inverse_value_transform, inverse_reward_transform)
         self.state_norm = state_norm
         self.action_space_n = action_space_n
@@ -108,33 +108,33 @@ class MuZeroNet(BaseMuZeroNet):
         self.pred_hid = 128
         self.pred_out = 512
 
-        # self.projection = nn.Sequential(
-        #     nn.Linear(self.feature_size, self.proj_hid),
-        #     nn.BatchNorm1d(self.proj_hid),
-        #     nn.ReLU(),
-        #     nn.Linear(self.proj_hid, self.proj_hid),
-        #     nn.BatchNorm1d(self.proj_hid),
-        #     nn.ReLU(),
-        #     nn.Linear(self.proj_hid, self.proj_out),
-        #     nn.BatchNorm1d(self.proj_out)
-        # )
+        if proj:
+            self.projection = nn.Sequential(
+                 nn.Linear(self.feature_size, self.proj_hid),
+                 nn.BatchNorm1d(self.proj_hid),
+                nn.ReLU(),
+                  nn.Linear(self.proj_hid, self.proj_hid),
+                 nn.BatchNorm1d(self.proj_hid),
+              nn.ReLU(),
+              nn.Linear(self.proj_hid, self.proj_out),
+              nn.BatchNorm1d(self.proj_out)
+          )
         #@wjc simplufy useless module
+        #    self.projection = nn.Sequential(
+        #     nn.Linear(self.feature_size, self.proj_out),
+        #    )
 
-        #self.projection = nn.Sequential(
-         #   nn.Linear(self.feature_size, self.proj_out),
-        #)
-
-        # self.projection_head = nn.Sequential(
-        #     nn.Linear(self.proj_out, self.pred_hid),
-        #     nn.BatchNorm1d(self.pred_hid),
-        #     nn.ReLU(),
-        #     nn.Linear(self.pred_hid, self.pred_out),
-        # )
+            self.projection_head = nn.Sequential(
+                 nn.Linear(self.proj_out, self.pred_hid),
+                nn.BatchNorm1d(self.pred_hid),
+                nn.ReLU(),
+                nn.Linear(self.pred_hid, self.pred_out),
+            )
         #@wjc
 
-        #self.projection_head = nn.Sequential(
-         #   nn.Linear(self.proj_out, self.pred_out),
-        #)
+        #    self.projection_head = nn.Sequential(
+        #        nn.Linear(self.proj_out, self.pred_out),
+        #   )
 
     def project(self, hidden_state, with_grad=True):
         proj = self.projection(hidden_state)

@@ -92,7 +92,7 @@ class GameHistory:
         #@wjc
         self.legal_actions.append(init_legal_action)
 
-    def pad_over(self, next_block_observations, next_block_rewards, next_block_root_values, next_block_child_visits):
+    def pad_over(self, next_block_observations, next_block_rewards, next_block_root_values, next_block_child_visits, next_legal_a):
         assert len(next_block_observations) <= self.config.num_unroll_steps
         assert len(next_block_child_visits) <= self.config.num_unroll_steps
         assert len(next_block_root_values) <= self.config.num_unroll_steps + self.config.td_steps
@@ -101,6 +101,9 @@ class GameHistory:
         # notice: next block observation should start from (stacked_observation - 1) in next trajectory
         for observation in next_block_observations:
             self.obs_history.append(copy.deepcopy(observation))
+        #newly added
+        for la in next_legal_a:
+            self.legal_actions.append(copy.deepcopy(la))
 
         for reward in next_block_rewards:
             self.rewards.append(reward)
@@ -233,7 +236,211 @@ class GameHistory:
 
     def __len__(self):
         return len(self.actions)
+def prepare_multi_target_test(games, state_index_lst, config, model):
+    batch_values, batch_rewards, batch_policies = [], [], []
 
+    zero_obs = games[0].zero_obs()
+    device = next(model.parameters()).device
+    obs_lst = []
+    value_mask = []
+
+    root_val_lst=[]
+
+    with torch.no_grad():
+        for game, state_index in zip(games, state_index_lst):
+            traj_len = len(game)
+            #print("obs length:",len(ray.get(game.obs_history)),flush=True)
+            #print("root length:",len(game.root_values),game.root_values,flush=True)
+            game_obs = game.obs(state_index + config.td_steps, config.num_unroll_steps)
+            #game_value=game.root_values[state_index + config.td_steps, config.num_unroll_steps]
+            for current_index in range(state_index, state_index + config.num_unroll_steps + 1):
+                bootstrap_index = current_index + config.td_steps
+
+                if bootstrap_index < traj_len:
+                    value_mask.append(1)
+                    # obs = game.obs(bootstrap_index)
+                    beg_index = bootstrap_index - (state_index + config.td_steps)
+                    end_index = beg_index + config.stacked_observations
+                    obs = game_obs[beg_index:end_index]
+                    # assert (np.array(obs) == np.array(game.obs(bootstrap_index))).all()
+             #       print("root value: ")
+                    try:
+                        root_val_lst.append(game.root_values[bootstrap_index])
+                    except:
+                        print("bootstrap idx:",bootstrap_index,flush=True)
+                else:
+                    value_mask.append(0)
+                    obs = zero_obs
+                    root_val_lst.append(0)
+
+                obs_lst.append(obs)
+
+        batch_num = len(obs_lst)
+        obs_lst = prepare_observation_lst(obs_lst, image_based=config.image_based)
+        m_batch = config.target_infer_size
+        slices = batch_num // m_batch
+        if m_batch * slices < batch_num:
+            slices += 1
+        network_output = []
+        for i in range(slices):
+            beg_index = m_batch * i
+            end_index = m_batch * (i + 1)
+            m_obs = obs_lst[beg_index:end_index]
+
+            if config.image_based:
+                m_obs = torch.from_numpy(m_obs).to(device).float() / 255.0#no divice 255
+            else:
+                m_obs = torch.from_numpy(m_obs).to(device).float().reshape(m_obs.shape[0], -1)
+            if config.amp_type == 'torch_amp':
+                with autocast():
+                    m_output = model.initial_inference(m_obs)
+            else:
+                m_output = model.initial_inference(m_obs)
+            network_output.append(m_output)
+
+        value_lst = concat_output_value(network_output)
+        #print("original value_lst:",value_lst.shape,flush=True)
+        value_lst=np.array(root_val_lst)
+        #print("value_lst shape:", value_lst.shape,flush=True)
+
+        #value_lst = value_lst.reshape(-1) * config.discount ** config.td_steps
+        value_lst = value_lst * config.discount ** config.td_steps
+
+        # get last value
+        value_lst = value_lst * np.array(value_mask)
+        value_lst = value_lst.tolist()
+
+        value_index = 0
+        for game, state_index in zip(games, state_index_lst):
+            traj_len = len(game)
+            target_values = []
+            target_rewards = []
+
+            for current_index in range(state_index, state_index + config.num_unroll_steps + 1):
+                bootstrap_index = current_index + config.td_steps
+                for i, reward in enumerate(game.rewards[current_index:bootstrap_index]):
+                    value_lst[value_index] += reward * config.discount ** i
+
+                if current_index < traj_len:
+                    target_values.append(value_lst[value_index])
+                    target_rewards.append(game.rewards[current_index])
+                else:
+                    target_values.append(0)
+                    target_rewards.append(0)
+                value_index += 1
+
+            batch_values.append(target_values)
+            batch_rewards.append(target_rewards)
+
+    # for policy
+    policy_mask = []  # 0 -> out of traj, 1 -> old policy
+    for game, state_index in zip(games, state_index_lst):
+        traj_len = len(game)
+        target_policies = []
+
+        for current_index in range(state_index, state_index + config.num_unroll_steps + 1):
+            if current_index < traj_len:
+                target_policies.append(game.child_visits[current_index])
+                policy_mask.append(1)
+            else:
+                target_policies.append([0 for _ in range(config.action_space_size)])
+                policy_mask.append(0)
+
+        batch_policies.append(target_policies)
+
+    return batch_values, batch_rewards, batch_policies
+
+def prepare_multi_target_none(games, state_index_lst, config, model):
+    batch_values, batch_rewards, batch_policies = [], [], []
+
+    zero_obs = games[0].zero_obs()
+    device = next(model.parameters()).device
+    obs_lst = []
+    value_mask = []
+
+    root_val_lst=[]
+
+    with torch.no_grad():
+        for game, state_index in zip(games, state_index_lst):
+            traj_len = len(game)
+            #import sys
+            #np.set_printoptions(threshold=sys.maxsize)
+            #print("state idx= {}/{}".format(state_index,len(state_index_lst)),flush=True)
+           # print("obs length:",len(ray.get(game.obs_history)),flush=True)
+          #  print("root length:",len(game.root_values),flush=True)
+            # game_obs = game.obs(state_index + config.td_steps, config.num_unroll_steps)
+            #game_value=game.root_values[state_index + config.td_steps, config.num_unroll_steps]
+            for current_index in range(state_index, state_index + config.num_unroll_steps + 1):
+                bootstrap_index = current_index + config.td_steps
+         #       print("current idx:", current_index,flush=True)
+                if bootstrap_index < traj_len:
+                    value_mask.append(1)
+                    # obs = game.obs(bootstrap_index)
+                    beg_index = bootstrap_index - (state_index + config.td_steps)
+                    end_index = beg_index + config.stacked_observations
+                    obs = zero_obs
+                    # assert (np.array(obs) == np.array(game.obs(bootstrap_index))).all()
+             #       print("root value: ")
+                    #try:
+                    root_val_lst.append(game.root_values[current_index])
+                    #except:
+                    #    print("bootstrap idx:",bootstrap_index,flush=True)
+                else:
+                    value_mask.append(0)
+                    # obs = zero_obs
+                    root_val_lst.append(0)
+
+                #obs_lst.append(obs)
+        #print("===========>finish preparing value, ",len(root_val_lst),flush=True)
+        network_output = []
+        #print("original value_lst:",value_lst.shape,flush=True)
+        value_lst=np.array(root_val_lst)
+        #value_lst = value_lst.reshape(-1) * config.discount ** config.td_steps
+        value_lst = value_lst * config.discount ** config.td_steps
+
+        # get last value
+        value_lst = value_lst * np.array(value_mask)
+        value_lst = value_lst.tolist()
+
+        value_index = 0
+        for game, state_index in zip(games, state_index_lst):
+            traj_len = len(game)
+            target_values = []
+            target_rewards = []
+
+            for current_index in range(state_index, state_index + config.num_unroll_steps + 1):
+                bootstrap_index = current_index + config.td_steps
+                for i, reward in enumerate(game.rewards[current_index:bootstrap_index]):
+                    value_lst[value_index] += reward * config.discount ** i
+
+                if current_index < traj_len:
+                    target_values.append(value_lst[value_index])
+                    target_rewards.append(game.rewards[current_index])
+                else:
+                    target_values.append(0)
+                    target_rewards.append(0)
+                value_index += 1
+
+            batch_values.append(target_values)
+            batch_rewards.append(target_rewards)
+
+    # for policy
+    policy_mask = []  # 0 -> out of traj, 1 -> old policy
+    for game, state_index in zip(games, state_index_lst):
+        traj_len = len(game)
+        target_policies = []
+
+        for current_index in range(state_index, state_index + config.num_unroll_steps + 1):
+            if current_index < traj_len:
+                target_policies.append(game.child_visits[current_index])
+                policy_mask.append(1)
+            else:
+                target_policies.append([0 for _ in range(config.action_space_size)])
+                policy_mask.append(0)
+
+        batch_policies.append(target_policies)
+
+    return batch_values, batch_rewards, batch_policies
 
 def prepare_multi_target_only_value(games, state_index_lst, config, model):
     batch_values, batch_rewards, batch_policies = [], [], []

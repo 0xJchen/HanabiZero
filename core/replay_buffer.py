@@ -178,7 +178,7 @@ class ReplayBuffer(object):
         #     probs[:begin_index] = 0.
 
         probs /= probs.sum()
-        
+
         while total <=batch_size:
             time.sleep(1)
             print("^^^^^^^in replay buffer's prepare_batch_context: total={0}, batch_size={1}".format(self.get_total_len(),batch_size),flush=True)
@@ -247,7 +247,7 @@ class ReplayBuffer(object):
                 if total_transition <= self.transition_top * self.keep_ratio:#@wjc, <= to =
                     index = i
                     break
-            
+
             if total_transition >= self.config.batch_size:
                 self._remove(index + 1)
 
