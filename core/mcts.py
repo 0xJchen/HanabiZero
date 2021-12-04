@@ -18,6 +18,7 @@ class MCTS(object):
 
             num = roots.num
             pb_c_base, pb_c_init, discount = self.config.pb_c_base, self.config.pb_c_init, self.config.discount
+            #print("batchworker, hidden state root: ", np.array(hidden_state_roots).shape,flush=True)
             hidden_state_pool = [hidden_state_roots]
             hidden_state_index_x = 0
             min_max_stats_lst = tree.MinMaxStatsList(num)
@@ -26,14 +27,19 @@ class MCTS(object):
             # DrawNode.clear()
             # d_root = DrawNode(0)
             # draw_tree = DrawTree(d_root)
+            total_simulation=self.config.num_simulations
             for index_simulation in range(self.config.num_simulations):
+                if (index_simulation == total_simulation-1):
+                    continue
                 hidden_states = []
                 results = tree.ResultsWrapper(num)
                 hidden_state_index_x_lst, hidden_state_index_y_lst, last_actions = tree.multi_traverse(roots, pb_c_base, pb_c_init, discount, min_max_stats_lst, results)
 
                 for ix, iy in zip(hidden_state_index_x_lst, hidden_state_index_y_lst):
+                    #print("{},{},pool={}".format(ix,iy,np.array(hidden_state_pool).shape),flush=True)
                     hidden_states.append(hidden_state_pool[ix][iy])
                 hidden_states = np.asarray(hidden_states)
+                hidden_nan=np.isnan(hidden_states)
                 hidden_states = torch.from_numpy(hidden_states)
                 hidden_states = hidden_states.to('cuda')
 
@@ -49,10 +55,19 @@ class MCTS(object):
                 reward_pool = network_output.reward.reshape(-1).tolist()
                 value_pool = network_output.value.reshape(-1).tolist()
                 policy_logits_pool = network_output.policy_logits
+                #print(type(policy_logits_pool),flush=True)
                 nan_part = np.isnan(policy_logits_pool)
                 if nan_part.any():
-                    print('=========>mcts,[ERROR]: NAN in scalar!!!',flush=True)
-                policy_logits_pool[nan_part] = 0.
+                    #print("simulation={},node_simluation_cnt={},node_parallel_cnt={}".format(hidden_state_index_x,hidden_state_index_x_lst,hidden_state_index_y_lst),flush=True)
+                    print("simulation={}".format(hidden_state_index_x),flush=True)
+                    print("hidden_state_pool shape=",np.array(hidden_state_pool).shape,flush=True)
+                    print('=========>mcts,simulation={},[ERROR]: NAN in policy scalar!!!'.format(hidden_state_index_x), flush=True)
+                    if hidden_nan.any():
+                        print("=============>hidden nan",flush=True)
+                    #breakpoint()
+                    #print('=========>mcts,[ERROR]: NAN in scalar!!!, last_action={}'.format(last_actions),flush=True)
+                policy_logits_pool[nan_part] = 0.0
+                #print("policy logits pool shape",policy_logits_pool[0].shape,flush=True)
                 policy_logits_pool = policy_logits_pool.tolist()
                 # print('predicted reward: {} and value: {}'.format(reward_pool, value_pool))
 

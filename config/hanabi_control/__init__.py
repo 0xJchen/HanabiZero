@@ -46,12 +46,12 @@ class HanabiControlConfig(BaseMuZeroConfig):
             lr_decay_rate=0.1,
             lr_decay_steps=10000000,
             # replay window
-            start_window_size=2,#@wjc mannualy changed to 1 for debugging
+            start_window_size=5,#@wjc mannualy changed to 1 for debugging
             window_size=125000,#useless
             transition_num=1,
             # frame skip & stack observation
             frame_skip=1,
-            stacked_observations=4,#changed to 0
+            stacked_observations=args.stack,#changed to 0
             # spr
             consist_type='spr',
             consistency_coeff=args.const,#@wjc
@@ -67,7 +67,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
         # self.max_moves //= self.frame_skip#@wjc max move should just be 80
         # self.test_max_moves //= self.frame_skip
         self.const=args.const
-        self.start_window_size = self.start_window_size * 1000 // self.frame_skip#whta fuck?
+        self.start_window_size = self.start_window_size * 100 // self.frame_skip#whta fuck?
         self.start_window_size = max(1, self.start_window_size)
         self.image_channel = 1
         self.game_name=None
@@ -130,7 +130,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
         else:
             arg={"hanabi_name":self.env_name,"seed":None}
         env=HanabiEnv(arg)
-
+        #print("===================>",env.num_moves(),flush=True)
         # if seed is not None:
         #     env.seed(seed)
 
@@ -183,11 +183,11 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             # lr scheduler
             lr_warm_up=0.01,
             lr_type='step',
-            lr_init=0.1,
+            lr_init=args.lr,
             lr_decay_rate=0.1,
             lr_decay_steps=10000000,
             # replay window
-            start_window_size=5,#@wjc mannualy changed to 1 for debugging
+            start_window_size=50,#@wjc mannualy changed to 1 for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation
@@ -203,8 +203,8 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             debug_batch=args.debug_batch,
             debug_interval=args.debug_interval,
         # value reward support
-            value_support=DiscreteSupport(-50, 50, delta=1),
-            reward_support=DiscreteSupport(-50, 50, delta=1))#@wjc what?
+            value_support=DiscreteSupport(-100, 100, delta=1),
+            reward_support=DiscreteSupport(-100, 100, delta=1))#@wjc what?
 
         self.discount **= self.frame_skip
         # self.max_moves //= self.frame_skip#@wjc max move should just be 80

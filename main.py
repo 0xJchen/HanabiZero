@@ -85,6 +85,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug_batch', action='store_true', default=False, help='show empty batch steps')
     # Process arguments
     parser.add_argument('--debug_interval', type=int, default=500, help='show batch time interval')
+    parser.add_argument('--stack', type=int, default=4, help='stacked frame')
     args = parser.parse_args()
     args.device = 'cuda' if (not args.no_cuda) and torch.cuda.is_available() else 'cpu'
     assert args.revisit_policy_search_rate is None or 0 <= args.revisit_policy_search_rate <= 1, \
@@ -169,8 +170,8 @@ if __name__ == '__main__':
                 print("loading my model!")
                 model_path = args.model_path
             parent_model_path=model_path
-            for idx in range(args.test_begin,args.test_end+1):
-                model_path=parent_model_path+"/model_"+str(int(idx*10000))+".p"
+            for idx in range(1):
+                #model_path=parent_model_path+"/model_"+str(int(idx*10000))+".p"
                 assert os.path.exists(model_path), 'model not found at {}'.format(model_path)
 
                 model = muzero_config.get_uniform_network().to('cuda')

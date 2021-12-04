@@ -48,7 +48,7 @@ namespace tree{
 
     CNode::~CNode(){}
 
-    void CNode::expand(int to_play, int hidden_state_index_x, int hidden_state_index_y, float reward, const std::vector<float> &policy_logits, const std::vector<int> &stackLegalActions){
+    void CNode::expand(int to_play, int hidden_state_index_x, int hidden_state_index_y, float reward, const std::vector<float> &temp_policy_logits, const std::vector<int> &stackLegalActions){
         this->to_play = to_play;
         this->hidden_state_index_x = hidden_state_index_x;
         this->hidden_state_index_y = hidden_state_index_y;
@@ -60,6 +60,11 @@ namespace tree{
         float policy[action_num];
         float policy_max = FLOAT_MIN;
         int debug=0;
+        //@wjc mock policy logits
+        float policy_logits[action_num];
+        for (int a=0;a<action_num;++a){
+            policy_logits[a]=temp_policy_logits[a];
+        }
 
 //std::cout<<"legal actions";
         //==================================
@@ -71,6 +76,13 @@ namespace tree{
             std::cout<<stackLegalActions[a];
         }
         std::cout<<std::endl;
+        }
+        //@wjc manually filter nan logits
+        for (int a=0;a<action_num;++a){
+            float cur_a=policy_logits[a];
+            if(cur_a!=cur_a){
+                policy_logits[a]=0.0;
+            }
         }
         //==================================
         //if (flag==0){
@@ -120,7 +132,7 @@ namespace tree{
             this->children_index.push_back(index);
             if (prior!=prior){
                 printf("nan prior: %f ",prior);
-                debug = 1;
+//debug = 1;
             }
             //if (debug==1){
             //    printf("a=%d, prior=%f  ",a,prior);
@@ -140,6 +152,10 @@ namespace tree{
             for (int a=0; a<action_num;++a){
                 printf("%d",stackLegalActions[a]);
             }
+            for (int a=0;a<action_num;++a){
+                printf("%f",policy_logits[a]);
+            }
+            
             printf("]\n");
         }
     }
@@ -202,7 +218,7 @@ namespace tree{
     float CNode::value(){
         float true_value = 0.0;
         if(this->visit_count == 0){
-            printf("visit count=0, raise value calculatioin error.\n");
+            //printf("visit count=0, raise value calculatioin error.\n");
             return true_value;
         }
         else{
@@ -417,6 +433,13 @@ namespace tree{
 
     float cucb_score(CNode *child, tools::CMinMaxStats &min_max_stats, float parent_mean_q, float parent_visit_count, float pb_c_base, float pb_c_init, float discount){
         float pb_c = 0.0, prior_score = 0.0, value_score = 0.0;
+        //@wjc manually filter impossible child prior
+        if (child->prior!=child->prior){
+            child->prior=0.0;
+        }
+        if (child->visit_count != child->visit_count){
+            child->visit_count=0;
+        }
         pb_c = log((parent_visit_count + pb_c_base + 1) / pb_c_base) + pb_c_init;
         pb_c *= (sqrt(parent_visit_count + 1) / (child->visit_count + 1));
 
@@ -439,10 +462,10 @@ namespace tree{
         if (value_score < 0) value_score = 0;
         if (value_score > 1) value_score = 1;
 
-        
+  //      child->print_out(); 
         float ucb_value = prior_score + value_score;
         if (ucb_value < FLOAT_MIN || ucb_value > FLOAT_MAX || !std::isfinite(ucb_value)){
-            child->print_out();
+//  child->print_out();
             printf("[ERROR] Value: value -> %f, min/max Q -> %f/%f, visit count -> %d(%d)\n", child->value(), min_max_stats.minimum, min_max_stats.maximum, parent_visit_count, child->visit_count);
             printf("(prior, value): %f(%f * %f) + %f(%f, [%f, %f]) = %f\n", prior_score, pb_c, child->prior, min_max_stats.normalize(value_score), value_score, min_max_stats.minimum, min_max_stats.maximum, prior_score + min_max_stats.normalize(value_score));
         }
@@ -471,8 +494,9 @@ namespace tree{
                 parent_q = mean_q;
 
                 int action = cselect_child(node, min_max_stats_lst->stats_lst[i], pb_c_base, pb_c_init, discount, mean_q);
-                if(DEBUG_MODE){
+                if(DEBUG_MODE || action != action){
                     printf("select action: %d\n", action);
+                    printf("node child size: ",node->children_index.size());
                 }
 //                printf("total unsigned q: %f\n", total_unsigned_q);
                 node->best_action = action;

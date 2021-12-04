@@ -693,6 +693,10 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     total_transitions=0
     obs_batch_ori, action_batch, mask_batch, target_reward, target_value, target_policy, indices, weights_lst, make_time = batch
     # print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
+    n=["obs","a","mask","re","val","p","idx","weight_idx","make_time"]
+    for idx,item in enumerate(batch):
+        print("in update weights: "+str(n[idx]),item.shape,flush=True)
+
     # [:, 0: config.stacked_observations * 3,:,:]
     if config.image_based:
         obs_batch_ori = torch.from_numpy(obs_batch_ori).to(config.device).float() / 255.0
@@ -748,11 +752,14 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
     transformed_target_value = config.scalar_transform(target_value)
     target_value_phi = config.value_phi(transformed_target_value)
+    print("target: ",target_value.shape,transformed_target_value.shape,target_value_phi.shape,flush=True)
 
     with autocast():
         value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
     scaled_value = config.inverse_value_transform(value)
+    #print("inference shape: ",value.shape,policy_logits.shape,hidden_state.shape,flush=True)
 
+    print("inference shape: value={}, policy_logits={}, hidden_state={}, scaled_value={}".format(value.shape, policy_logits.shape,hidden_state.shape,scaled_value.shape),flush=True)
     if vis_result:
         state_lst = hidden_state.detach().cpu().numpy()
 
@@ -797,6 +804,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
             policy_loss += -(torch.log_softmax(policy_logits, dim=1) * target_policy[:, step_i + 1]).sum(1)
             value_loss += config.scalar_value_loss(value, target_value_phi[:, step_i + 1])
+            print("==================>",reward_loss.shape,reward.shape, target_reward_phi[:, step_i].shape,flush=True)
             reward_loss += config.scalar_reward_loss(reward, target_reward_phi[:, step_i])
             hidden_state.register_hook(lambda grad: grad * 0.5)
 
@@ -1212,6 +1220,8 @@ class BatchWorker(object):
         # weights_lst = (weights_lst / weight_max).clip(0., 1.0)
         # batch[-2] = weights_lst
         # print("start returning batch", flush=True)
+       # for i in batch:
+       #     print("batch shape",i.shape,flush=True,end="")
         return batch
 
 
@@ -1322,6 +1332,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     #        _interval=config.debug_interval
 
         if step_count%_interval==0:
+        #if step_count%1==0:
            # print("===========>100 lr step, cost [{}] s, buffer = {}".format(time.time()-time_100k,ray.get(replay_buffer.get_total_len.remote())),flush=True)
             _time=time.time()-time_100k
             print("===========>{} lr step, cost [{}] s; <==>[{}] s/100lr".format(_interval,_time,_time/(_interval/500)),flush=True)

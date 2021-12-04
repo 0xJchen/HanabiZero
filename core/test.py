@@ -28,7 +28,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
     with torch.no_grad():
         envs = [config.new_game(seed=i, save_video=save_video, save_path=save_path, test=True, final_test=final_test,
                               video_callable=lambda episode_id: True, uid=i) for i in range(test_episodes)]
-        
+
         # init_obses = [env.reset() for env in envs]
         init_obses=[]
         init_legal_actions=[]
@@ -49,21 +49,21 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
         ep_step=[0 for I in range(test_episodes)]
         ep_ori_rewards = [0 for _ in range(test_episodes)]
         ep_clip_rewards = [0 for _ in range(test_episodes)]
-        ep_final_rewards = [0 for _ in range(test_episodes)] 
+        ep_final_rewards = [0 for _ in range(test_episodes)]
         while not dones.all():
             if render:
                 for i in range(test_episodes):
                     envs[i].render()
 
             stack_obs = [game_history.step_obs() for game_history in game_histories]
-            
+
             #@wjc
             stack_legal_actions=[game_history.legal_actions[-1] for game_history in game_histories]
 
             if config.image_based:
                 stack_obs = prepare_observation_lst(stack_obs)
                 # stack_obs = torch.from_numpy(stack_obs).to(device).float() / 255.0
-                stack_obs = torch.from_numpy(stack_obs).to(device).float() 
+                stack_obs = torch.from_numpy(stack_obs).to(device).float()
             else:
                 stack_obs = torch.from_numpy(np.array(stack_obs)).to(device).reshape(test_episodes, -1)
 
@@ -86,7 +86,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
                     continue
 
                 distributions, value, env = roots_distributions[i], roots_values[i], envs[i]
-                
+
                 action, _ = select_action(distributions, temperature=1, deterministic=True,legal_actions=stack_legal_actions[i])
 
                 obs, ori_reward, done, info, legal_a = env.step(int(action))
@@ -108,9 +108,9 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
                 ep_step[i]+=1
             step += 1
 
-        #for i in range(test_episodes):
-            #print('===========>Test episode {}:  reward={}, step={}, final_reward={}'.format(i, ep_ori_rewards[i],ep_step[i],ep_final_rewards[i]),flush=True)
-        
-        print(ep_final_rewards,ep_ori_rewards)            
+        for i in range(test_episodes):
+            print('===========>Test episode {}:  reward={}, step={}, final_reward={}'.format(i, ep_ori_rewards[i],ep_step[i],ep_final_rewards[i]),flush=True)
+
+        print(ep_final_rewards,ep_ori_rewards)
         env.close()
     return ep_ori_rewards, save_path

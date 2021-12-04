@@ -71,7 +71,7 @@ class MuZeroNet(BaseMuZeroNet):
         self.action_space_n = action_space_n
         self.feature_size = 512
         self.hidden_size = 128
-        #print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
+       # print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
         self._representation = nn.Sequential(nn.Linear(input_size, self.feature_size//2),
                                              nn.BatchNorm1d(self.feature_size//2),
                                              nn.ReLU(),
@@ -109,6 +109,7 @@ class MuZeroNet(BaseMuZeroNet):
         self.pred_out = 512
 
         if proj:
+            assert False
             self.projection = nn.Sequential(
                  nn.Linear(self.feature_size, self.proj_hid),
                  nn.BatchNorm1d(self.proj_hid),
