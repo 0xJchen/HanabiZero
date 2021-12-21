@@ -10,7 +10,7 @@ import numpy as np
 class HanabiControlConfig(BaseMuZeroConfig):
     def __init__(self,args):
         super(HanabiControlConfig, self).__init__(
-            training_steps=1000000,
+            training_steps=100000,
             last_steps=0,
             test_interval=1000,#changed to 1000
             log_interval=1000,
@@ -19,11 +19,11 @@ class HanabiControlConfig(BaseMuZeroConfig):
             checkpoint_interval=1000,
             target_model_interval=200,#changed from 1k @wjc
             save_ckpt_interval=10000,
-            max_moves=40,#@wjc
-            test_max_moves=40,#@wjc
+            max_moves=60,#@wjc
+            test_max_moves=60,#@wjc
             history_length=12001,#changed to 80 from 12001
             discount=0.999,#from 0.997
-            dirichlet_alpha=0.3,
+            dirichlet_alpha=0.1,#maybe for small, it should be smaller?
             value_delta_max=0.006,
             num_simulations=args.simulations,
             batch_size=args.batch_size,
@@ -40,11 +40,11 @@ class HanabiControlConfig(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=args.lr,
+            lr_warm_up=0.01,
             lr_type='step',
             lr_init=args.lr,
             lr_decay_rate=0.1,
-            lr_decay_steps=10000000,
+            lr_decay_steps=100000,
             # replay window
             start_window_size=5,#@wjc mannualy changed to 1 for debugging
             window_size=125000,#useless
@@ -151,17 +151,17 @@ class HanabiControlConfig(BaseMuZeroConfig):
 class HanabiControlConfigFull(BaseMuZeroConfig):
     def __init__(self,args):
         super(HanabiControlConfigFull, self).__init__(
-            training_steps=1000000,
+            training_steps=2000000,
             last_steps=100,
             test_interval=4000,#changed to 1000
-            log_interval=2000,
-            vis_interval=2000,
+            log_interval=1000,
+            vis_interval=1000,
             test_episodes=28,
             checkpoint_interval=2000,
-            target_model_interval=200,
+            target_model_interval=400,
             save_ckpt_interval=10000,
-            max_moves=80,#@wjc
-            test_max_moves=80,#@wjc
+            max_moves=160,#@wjc
+            test_max_moves=160,#@wjc
             history_length=12001,#changed to 80 from 12001
             discount=0.999,#changed from 0.997
             dirichlet_alpha=0.3,
@@ -181,18 +181,18 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.01,
+            lr_warm_up=0.002,#changed from 0.01 @jc, this is fraction of warm up steps
             lr_type='step',
             lr_init=args.lr,
             lr_decay_rate=0.1,
-            lr_decay_steps=10000000,
+            lr_decay_steps=500000,
             # replay window
-            start_window_size=50,#@wjc mannualy changed to 1 for debugging
+            start_window_size=10,#@wjc mannualy changed to 1 for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation
             frame_skip=1,
-            stacked_observations=4,
+            stacked_observations=args.stack,
             # spr
             consist_type='spr',
             consistency_coeff=0,#@wjc

@@ -39,7 +39,7 @@ class MCTS(object):
                     #print("{},{},pool={}".format(ix,iy,np.array(hidden_state_pool).shape),flush=True)
                     hidden_states.append(hidden_state_pool[ix][iy])
                 hidden_states = np.asarray(hidden_states)
-                hidden_nan=np.isnan(hidden_states)
+                #hidden_nan=np.isnan(hidden_states)
                 hidden_states = torch.from_numpy(hidden_states)
                 hidden_states = hidden_states.to('cuda')
 
@@ -58,14 +58,16 @@ class MCTS(object):
                 #print(type(policy_logits_pool),flush=True)
                 nan_part = np.isnan(policy_logits_pool)
                 if nan_part.any():
+                    #there's problem is disable here, when no-reanalyze
                     #print("simulation={},node_simluation_cnt={},node_parallel_cnt={}".format(hidden_state_index_x,hidden_state_index_x_lst,hidden_state_index_y_lst),flush=True)
-                    print("simulation={}".format(hidden_state_index_x),flush=True)
-                    print("hidden_state_pool shape=",np.array(hidden_state_pool).shape,flush=True)
-                    print('=========>mcts,simulation={},[ERROR]: NAN in policy scalar!!!'.format(hidden_state_index_x), flush=True)
-                    if hidden_nan.any():
-                        print("=============>hidden nan",flush=True)
+                    #print("simulation={}".format(hidden_state_index_x),flush=True)
+                    #print("hidden_state_pool shape=",np.array(hidden_state_pool).shape,flush=True)
+                    #print('=========>mcts,simulation={},[ERROR]: NAN in policy scalar!!!'.format(hidden_state_index_x), flush=True)
+                    #if hidden_nan.any():
+                    #    print("=============>hidden nan",flush=True)
                     #breakpoint()
                     #print('=========>mcts,[ERROR]: NAN in scalar!!!, last_action={}'.format(last_actions),flush=True)
+                    pass
                 policy_logits_pool[nan_part] = 0.0
                 #print("policy logits pool shape",policy_logits_pool[0].shape,flush=True)
                 policy_logits_pool = policy_logits_pool.tolist()

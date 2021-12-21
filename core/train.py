@@ -31,7 +31,7 @@ except:
 train_logger = logging.getLogger('train')
 test_logger = logging.getLogger('train_test')
 
-gpu_num=0.07
+gpu_num=0.13#0.13 for full
 
 def soft_update(target, source, tau):
     for target_param, param in zip(target.parameters(), source.parameters()):
@@ -693,9 +693,9 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     total_transitions=0
     obs_batch_ori, action_batch, mask_batch, target_reward, target_value, target_policy, indices, weights_lst, make_time = batch
     # print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
-    n=["obs","a","mask","re","val","p","idx","weight_idx","make_time"]
-    for idx,item in enumerate(batch):
-        print("in update weights: "+str(n[idx]),item.shape,flush=True)
+    #n=["obs","a","mask","re","val","p","idx","weight_idx","make_time"]
+    #for idx,item in enumerate(batch):
+    #    print("in update weights: "+str(n[idx]),item.shape,flush=True)
 
     # [:, 0: config.stacked_observations * 3,:,:]
     if config.image_based:
@@ -752,14 +752,14 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
     transformed_target_value = config.scalar_transform(target_value)
     target_value_phi = config.value_phi(transformed_target_value)
-    print("target: ",target_value.shape,transformed_target_value.shape,target_value_phi.shape,flush=True)
+    #print("target: ",target_value.shape,transformed_target_value.shape,target_value_phi.shape,flush=True)
 
     with autocast():
         value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
     scaled_value = config.inverse_value_transform(value)
     #print("inference shape: ",value.shape,policy_logits.shape,hidden_state.shape,flush=True)
 
-    print("inference shape: value={}, policy_logits={}, hidden_state={}, scaled_value={}".format(value.shape, policy_logits.shape,hidden_state.shape,scaled_value.shape),flush=True)
+    #print("inference shape: value={}, policy_logits={}, hidden_state={}, scaled_value={}".format(value.shape, policy_logits.shape,hidden_state.shape,scaled_value.shape),flush=True)
     if vis_result:
         state_lst = hidden_state.detach().cpu().numpy()
 
@@ -804,7 +804,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
             policy_loss += -(torch.log_softmax(policy_logits, dim=1) * target_policy[:, step_i + 1]).sum(1)
             value_loss += config.scalar_value_loss(value, target_value_phi[:, step_i + 1])
-            print("==================>",reward_loss.shape,reward.shape, target_reward_phi[:, step_i].shape,flush=True)
+            #print("==================>",reward_loss.shape,reward.shape, target_reward_phi[:, step_i].shape,flush=True)
             reward_loss += config.scalar_reward_loss(reward, target_reward_phi[:, step_i])
             hidden_state.register_hook(lambda grad: grad * 0.5)
 
@@ -862,6 +862,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
     #loss = ( config.policy_loss_coeff * policy_loss +
      #       config.value_loss_coeff * value_loss + config.reward_loss_coeff * reward_loss)
+    #print("==========>loss",weights.shape,loss.shape,flush=True)
     weighted_loss = (weights * loss).mean()
 
     # L2 reg
@@ -994,7 +995,8 @@ class BatchStorage(object):
         if self.batch_queue.qsize() <= self.threshold:
             self.batch_queue.put(batch)
         else:
-            print("full",flush=True)
+            pass
+            #print("full",flush=True)
 
     def pop(self):
         if self.batch_queue.qsize() > 0:
@@ -1285,10 +1287,11 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
-            time.sleep(0.05)#0.3->2
+            time.sleep(0.1)#0.3->2
             #print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),config.debug_batch,flush=True)
             if _debug_batch:
-                print("_train(): waiting batch storage,step=",step_count,flush=True)
+                #print("_train(): waiting batch storage,step=",step_count,flush=True)
+                print("LEARNER WAITING!",flush=True)
             continue
         # print("making one batch takes: ", time.time()-before_btch,flush=True)
         shared_storage.incr_counter.remote()

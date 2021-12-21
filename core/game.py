@@ -205,7 +205,7 @@ class GameHistory:
         #@wjc
         self.legal_actions=np.array(self.legal_actions,dtype=object)
         #try:
-         #   print("reward={},obs={},action={},legal={}".format(self.rewards.shape,ray.get(self.obs_history).shape,self.actions.shape,self.legal_actions.shape),flush=True)
+        #print("reward={},obs={},action={},legal={},child_visit={},root_val={}".format(self.rewards.shape,ray.get(self.obs_history).shape,self.actions.shape,self.legal_actions.shape,np.array(self.child_visits).shape,np.array(self.root_values).shape),flush=True)
         #except:
         #    print("gg")
     def store_search_stats(self, visit_counts, root_value, idx: int = None, set_flag=False):
@@ -352,7 +352,7 @@ def prepare_multi_target_test(games, state_index_lst, config, model):
 
 def prepare_multi_target_none(games, state_index_lst, config, model):
     gg=games[0]
-    print("child_visit={},root val={},a={},la={},obs={},r={}".format(len(gg.child_visits),len(gg.root_values),len(gg.actions),len(gg.legal_actions),len(ray.get(gg.obs_history)),len(gg.rewards)),flush=True)
+    #print("child_visit={},root val={},a={},la={},obs={},r={}".format(len(gg.child_visits),len(gg.root_values),len(gg.actions),len(gg.legal_actions),len(ray.get(gg.obs_history)),len(gg.rewards)),flush=True)
     batch_values, batch_rewards, batch_policies = [], [], []
 
     zero_obs = games[0].zero_obs()
@@ -633,7 +633,7 @@ def prepare_multi_target(replay_buffer, indices, make_time, games, state_index_l
             traj_len = len(game)
 
             game_obs = game.obs(state_index, config.num_unroll_steps)
-
+            #print("game info, la={},obs={},reward={},action={},c_v={},r_v={}".format(len(game.legal_actions),len(game.obs_history),len(game.rewards),len(game.actions),len(game.child_visits),len(game.root_values)),flush=True)
             #legal_action_lst.append(game.legal_actions[state_index])
             #print("state idx={},len={}, legal={},game_legal_action={}".format(state_index,len(state_index_lst),np.array(game.legal_actions[state_index]).shape,np.array(game.legal_actions).shape))
             #print("legal:",game.legal_actions[state_index])

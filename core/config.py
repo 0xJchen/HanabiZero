@@ -198,12 +198,12 @@ class BaseMuZeroConfig(object):
         return output
 
     def inverse_reward_transform(self, reward_logits):
-        return self.inverse_scalar_transform(reward_logits, self.reward_support)
+        return self.inverse_scalar_transform(reward_logits, self.reward_support,mode='reward')
 
     def inverse_value_transform(self, value_logits):
-        return self.inverse_scalar_transform(value_logits, self.value_support)
+        return self.inverse_scalar_transform(value_logits, self.value_support,mode='value')
 
-    def inverse_scalar_transform(self, logits, scalar_support):
+    def inverse_scalar_transform(self, logits, scalar_support,mode=None):
         """ Reference : Appendix F => Network Architecture
         & Appendix A : Proposition A.2 in https://arxiv.org/pdf/1805.11593.pdf (Page-11)
         """
@@ -223,7 +223,7 @@ class BaseMuZeroConfig(object):
 
         nan_part = torch.isnan(output)
         if nan_part.any():
-            print('===========> in scalar transform [ERROR]: NAN in scalar!!!',flush=True)
+            print('===========> in {} transform [ERROR]: NAN in scalar!!!'.format(mode),flush=True)
         output[nan_part] = 0.
         return output
 

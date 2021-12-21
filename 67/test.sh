@@ -21,7 +21,7 @@ python3 ../main.py --env Hanabi-Full --case hanabi --opr test --seed 1 --num_gpu
   --test_begin 1\
   --test_end 5 \
   --load_model \
-  --model_path './model' 
+  --model_path './16.p'
 
 
 #revisivt#@wjc current disabled from 0.99

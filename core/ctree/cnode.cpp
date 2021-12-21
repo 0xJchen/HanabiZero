@@ -131,8 +131,8 @@ namespace tree{
             int index = ptr_node_pool->size();
             this->children_index.push_back(index);
             if (prior!=prior){
-                printf("nan prior: %f ",prior);
-//debug = 1;
+                //printf("nan prior: %f ",prior)////manually disabled by @jc, Dec.20
+                prior=0.0;
             }
             //if (debug==1){
             //    printf("a=%d, prior=%f  ",a,prior);
@@ -162,10 +162,28 @@ namespace tree{
 
     void CNode::add_exploration_noise(float exploration_fraction, const std::vector<float> &noises, const std::vector<int> &legalActions){
         float noise, prior;
+        float legal_noise =0.;
+        float illegal_noise=0.;
         for(int a = 0; a < this->action_num; ++a){
             if (legalActions[a]==0){
+                illegal_noise+=noises[a];
+            }
+            else{
+                legal_noise+=noises[a];
+            }
+
+        }
+//printf("legal=%f,illegal=%f",legal_noise,illegal_noise);
+        for(int a = 0; a < this->action_num; ++a){
+            if (legalActions[a]<0){
+                printf("======>gg");
+            }
+            if (legalActions[a]==0){
+                CNode* child = this->get_child(a);
+                child->prior=0.0;
                 continue;
             }
+            //noise = noises[a]/(legal_noise) ;//note, rescaling!
             noise = noises[a];
             CNode* child = this->get_child(a);
 

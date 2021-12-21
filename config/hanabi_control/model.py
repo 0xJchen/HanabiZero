@@ -69,19 +69,20 @@ class MuZeroNet(BaseMuZeroNet):
         super(MuZeroNet, self).__init__(inverse_value_transform, inverse_reward_transform)
         self.state_norm = state_norm
         self.action_space_n = action_space_n
-        self.feature_size = 512
-        self.hidden_size = 128
+        self.feature_size = 128#chengded from 512
+        self.hidden_size = 64 #changed from 128
        # print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
-        self._representation = nn.Sequential(nn.Linear(input_size, self.feature_size//2),
-                                             nn.BatchNorm1d(self.feature_size//2),
-                                             nn.ReLU(),
-                                             nn.Linear(self.feature_size // 2, self.feature_size // 2),
-                                             nn.BatchNorm1d(self.feature_size // 2),
-                                             nn.ReLU(),
-                                             nn.Linear(self.feature_size //2 , self.feature_size),
-                                             nn.BatchNorm1d(self.feature_size),
-                                             nn.ReLU()
-                                             )
+        #self._representation = nn.Sequential(nn.Linear(input_size, self.feature_size//2),
+        #                                     nn.BatchNorm1d(self.feature_size//2),
+        #                                     nn.ReLU(),
+        #                                     nn.Linear(self.feature_size // 2, self.feature_size // 2),
+        #                                     nn.BatchNorm1d(self.feature_size // 2),
+        #                                     nn.ReLU(),
+        #                                     nn.Linear(self.feature_size //2 , self.feature_size),
+        #                                     nn.BatchNorm1d(self.feature_size),
+        #                                     nn.ReLU()
+        #                                     )
+        self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),ResMLP(self.feature_size))
         self._dynamics_state = DynamicNet(self.feature_size, action_space_n)
         self._dynamics_reward = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
                                               nn.BatchNorm1d(self.hidden_size),
@@ -201,16 +202,17 @@ class MuZeroNetFull(BaseMuZeroNet):
         self.init_size= 1024
         self.hidden_size = 256
         #print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
-        self._representation = nn.Sequential(nn.Linear(input_size, self.init_size),
-                                             nn.BatchNorm1d(self.init_size),
-                                             nn.ReLU(),
-                                             nn.Linear(self.init_size, self.feature_size),
-                                             nn.BatchNorm1d(self.feature_size),
-                                             nn.ReLU(),
-                                             nn.Linear(self.feature_size, self.feature_size),
-                                             nn.BatchNorm1d(self.feature_size),
-                                             nn.ReLU()
-                                             )
+       # self._representation = nn.Sequential(nn.Linear(input_size, self.init_size),
+       #                                      nn.BatchNorm1d(self.init_size),
+       #                                      nn.ReLU(),
+       #                                      nn.Linear(self.init_size, self.feature_size),
+       #                                      nn.BatchNorm1d(self.feature_size),
+       #                                      nn.ReLU(),
+       #                                      nn.Linear(self.feature_size, self.feature_size),
+       #                                      nn.BatchNorm1d(self.feature_size),
+       #                                      nn.ReLU()
+       #                                      )
+        self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),ResMLP(self.feature_size))
         self._dynamics_state = DynamicNet(self.feature_size, action_space_n)
         self._dynamics_reward = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
                                               nn.BatchNorm1d(self.hidden_size),

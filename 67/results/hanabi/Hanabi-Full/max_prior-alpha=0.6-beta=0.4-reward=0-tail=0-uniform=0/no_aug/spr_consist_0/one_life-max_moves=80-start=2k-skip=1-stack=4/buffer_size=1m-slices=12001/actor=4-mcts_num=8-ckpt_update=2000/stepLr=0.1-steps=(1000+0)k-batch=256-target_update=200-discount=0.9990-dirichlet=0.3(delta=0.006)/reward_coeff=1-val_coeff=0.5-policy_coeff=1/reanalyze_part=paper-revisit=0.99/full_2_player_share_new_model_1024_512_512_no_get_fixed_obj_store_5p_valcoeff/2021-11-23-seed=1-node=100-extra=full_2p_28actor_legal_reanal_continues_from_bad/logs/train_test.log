@@ -1,2 +1,0 @@
-[2021-11-23 10:21:06,239][train_test][INFO][train.py>_log] ==> #0          Test Mean Score: 2.107142857142857(Max: 7         )
-[2021-11-23 10:38:43,460][train_test][INFO][train.py>_log] ==> #6000       Test Mean Score: 1.8928571428571428(Max: 6         )
