@@ -690,9 +690,9 @@ def prepare_multi_target(replay_buffer, indices, make_time, games, state_index_l
         _, reward_pool, policy_logits_pool, hidden_state_roots = concat_output(network_output)
         reward_pool = reward_pool.squeeze().tolist()
         #print("policy logits pool shape,",len(policy_logits_pool),policy_logits_pool[0].shape,flush=True)
-        nan_part=np.isnan(policy_logits_pool)
-        if nan_part.any():
-            print("batchworker, prepare,policy logits are nan!",flush=True)
+        #nan_part=np.isnan(policy_logits_pool)
+        #if nan_part.any():
+        #    print("batchworker, prepare,policy logits are nan!",flush=True)
         policy_logits_pool = policy_logits_pool.tolist()
 
         roots = Roots(len(obs_lst), config.action_space_size, config.num_simulations)

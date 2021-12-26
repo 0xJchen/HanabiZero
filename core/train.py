@@ -31,7 +31,7 @@ except:
 train_logger = logging.getLogger('train')
 test_logger = logging.getLogger('train_test')
 
-gpu_num=0.13#0.13 for full
+gpu_num=0.06#0.13 for full
 
 def soft_update(target, source, tau):
     for target_param, param in zip(target.parameters(), source.parameters()):
@@ -687,7 +687,12 @@ class DataWorker(object):
                                                                 {'depth': depth_distribution,
                                                                  'visit': visit_count_distribution})
 
+def sanity_check(arr,name):
+    arr=np.array(arr)
+    nan_p=np.isnan(arr)
 
+    if np.any(nan_p):
+        print("{} contains nan".format(name),flush=True)
 def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_result=False):
     #total_transitions = ray.get(replay_buffer.get_total_len.remote())
     total_transitions=0
@@ -695,7 +700,8 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     # print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
     #n=["obs","a","mask","re","val","p","idx","weight_idx","make_time"]
     #for idx,item in enumerate(batch):
-    #    print("in update weights: "+str(n[idx]),item.shape,flush=True)
+    #    sanity_check(item,n[idx])
+        #print("in update weights: "+str(n[idx]),item.shape,flush=True)
 
     # [:, 0: config.stacked_observations * 3,:,:]
     if config.image_based:
@@ -1287,7 +1293,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
-            time.sleep(0.1)#0.3->2
+            time.sleep(0.08)#0.3->2
             #print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),config.debug_batch,flush=True)
             if _debug_batch:
                 #print("_train(): waiting batch storage,step=",step_count,flush=True)

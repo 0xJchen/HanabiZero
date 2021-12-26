@@ -23,7 +23,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
             test_max_moves=60,#@wjc
             history_length=12001,#changed to 80 from 12001
             discount=0.999,#from 0.997
-            dirichlet_alpha=0.1,#maybe for small, it should be smaller?
+            dirichlet_alpha=0.3,#maybe for small, it should be smaller?
             value_delta_max=0.006,
             num_simulations=args.simulations,
             batch_size=args.batch_size,
@@ -40,11 +40,11 @@ class HanabiControlConfig(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.01,
+            lr_warm_up=0.1,
             lr_type='step',
             lr_init=args.lr,
-            lr_decay_rate=0.1,
-            lr_decay_steps=100000,
+            lr_decay_rate=0.5,
+            lr_decay_steps=20000,
             # replay window
             start_window_size=5,#@wjc mannualy changed to 1 for debugging
             window_size=125000,#useless
@@ -181,13 +181,13 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.002,#changed from 0.01 @jc, this is fraction of warm up steps
+            lr_warm_up=0.001,#changed from 0.002 @jc, this is fraction of warm up steps
             lr_type='step',
             lr_init=args.lr,
-            lr_decay_rate=0.1,
-            lr_decay_steps=500000,
+            lr_decay_rate=args.decay_rate,
+            lr_decay_steps=args.decay_step,#changed from 0.5m
             # replay window
-            start_window_size=10,#@wjc mannualy changed to 1 for debugging
+            start_window_size=5,#@wjc mannualy changed to 10(final model) for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation
@@ -210,7 +210,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
         # self.max_moves //= self.frame_skip#@wjc max move should just be 80
         # self.test_max_moves //= self.frame_skip
 
-        self.start_window_size = self.start_window_size * 100 // self.frame_skip#whta fuck?
+        self.start_window_size = self.start_window_size * 200 // self.frame_skip#whta fuck?
         self.start_window_size = max(1, self.start_window_size)
         self.image_channel = 1
         self.game_name=None

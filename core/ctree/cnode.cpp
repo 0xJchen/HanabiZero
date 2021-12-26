@@ -165,8 +165,9 @@ namespace tree{
         float legal_noise =0.;
         float illegal_noise=0.;
         for(int a = 0; a < this->action_num; ++a){
-            if (legalActions[a]==0){
-                illegal_noise+=noises[a];
+            if (legalActions[a]!=1){
+                //illegal_noise+=noises[a];
+                continue;
             }
             else{
                 legal_noise+=noises[a];
@@ -175,16 +176,16 @@ namespace tree{
         }
 //printf("legal=%f,illegal=%f",legal_noise,illegal_noise);
         for(int a = 0; a < this->action_num; ++a){
-            if (legalActions[a]<0){
-                printf("======>gg");
-            }
-            if (legalActions[a]==0){
+            //if (legalActions[a]<0){
+            //    printf("======>gg");
+            //}
+            if (legalActions[a]<=0){
                 CNode* child = this->get_child(a);
                 child->prior=0.0;
                 continue;
             }
-            //noise = noises[a]/(legal_noise) ;//note, rescaling!
-            noise = noises[a];
+            noise = noises[a]/(legal_noise) ;//note, rescaling!
+            //noise = noises[a]*(this->action_num)/legal_noise;
             CNode* child = this->get_child(a);
 
             prior = child->prior;

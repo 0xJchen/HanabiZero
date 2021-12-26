@@ -7,7 +7,7 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 #python main.py --env KangarooNoFrameskip-v4 --case atari --opr train --seed 0 --num_gpus 3 --num_cpus 60 --force --batch_actor 28 \
 #python main.py --env KangarooNoFrameskip-v4 --case atari --opr train --seed 0 --num_gpus 4 --num_cpus 48 --force --batch_actor 42 \
 #58
-python3 ../main.py --env Hanabi-Small --case hanabi --opr train --seed 1 --num_gpus 4 --num_cpus 70 --force --batch_actor 21\
+python3 ../main.py --env Hanabi-Small --case hanabi --opr train --seed 1 --num_gpus 4 --num_cpus 70 --force --batch_actor 40\
   --p_mcts_num 8\
   --extra none \
   --use_priority \
@@ -16,7 +16,7 @@ python3 ../main.py --env Hanabi-Small --case hanabi --opr train --seed 1 --num_g
   --amp_type 'torch_amp' \
   --reanalyze_part 'paper' \
   --info 'small_share_1_stack_rescale_legal' \
-  --actors 4 \
+  --actors 6 \
   --simulations 50 \
   --batch_size 256 \
   --val_coeff 0.25 \
@@ -24,7 +24,7 @@ python3 ../main.py --env Hanabi-Small --case hanabi --opr train --seed 1 --num_g
   --debug_interval 100 \
   --debug_batch \
   --lr 0.1 \
-  --stack 1
+  --stack 4
  # --load_model \
 #  --model_path 'model_confirm_small_200k.p'
 

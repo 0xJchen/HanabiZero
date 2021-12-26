@@ -57,7 +57,7 @@ class MCTS(object):
                 policy_logits_pool = network_output.policy_logits
                 #print(type(policy_logits_pool),flush=True)
                 nan_part = np.isnan(policy_logits_pool)
-                if nan_part.any():
+                #if nan_part.any():
                     #there's problem is disable here, when no-reanalyze
                     #print("simulation={},node_simluation_cnt={},node_parallel_cnt={}".format(hidden_state_index_x,hidden_state_index_x_lst,hidden_state_index_y_lst),flush=True)
                     #print("simulation={}".format(hidden_state_index_x),flush=True)
@@ -67,7 +67,7 @@ class MCTS(object):
                     #    print("=============>hidden nan",flush=True)
                     #breakpoint()
                     #print('=========>mcts,[ERROR]: NAN in scalar!!!, last_action={}'.format(last_actions),flush=True)
-                    pass
+                #    pass
                 policy_logits_pool[nan_part] = 0.0
                 #print("policy logits pool shape",policy_logits_pool[0].shape,flush=True)
                 policy_logits_pool = policy_logits_pool.tolist()

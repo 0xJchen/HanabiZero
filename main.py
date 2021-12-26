@@ -86,6 +86,8 @@ if __name__ == '__main__':
     # Process arguments
     parser.add_argument('--debug_interval', type=int, default=500, help='show batch time interval')
     parser.add_argument('--stack', type=int, default=4, help='stacked frame')
+    parser.add_argument('--decay_step', type=int, default=200000, help='decay step')
+    parser.add_argument('--decay_rate', type=float, default=0.8, help='decay rate')
     args = parser.parse_args()
     args.device = 'cuda' if (not args.no_cuda) and torch.cuda.is_available() else 'cpu'
     assert args.revisit_policy_search_rate is None or 0 <= args.revisit_policy_search_rate <= 1, \
