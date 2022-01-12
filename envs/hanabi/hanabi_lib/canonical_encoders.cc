@@ -453,7 +453,11 @@ std::vector<int> CanonicalObservationEncoder::Encode(
   if (parent_game_->ObservationType() != HanabiGame::kMinimal) {
     offset += EncodeCardKnowledge(*parent_game_, obs, offset, &encoding);
   }
-
+//  std::cout << "hand section: " << EncodeHands(*parent_game_, obs, offset, &encoding) <<std::endl;
+//    std::cout<< "board section: " << EncodeBoard(*parent_game_, obs, offset, &encoding) <<std::endl;
+//      std::cout<< "discard section: " << EncodeDiscards(*parent_game_, obs, offset, &encoding) <<std::endl;
+ //       std::cout<< "last action section: " << EncodeLastAction(*parent_game_, obs, offset, &encoding) <<std::endl;
+//	  std::cout<< "card knowledge section: " << EncodeCardKnowledge(*parent_game_, obs, offset, &encoding) <<std::endl;
   assert(offset == encoding.size());
   return encoding;
 }

@@ -1,4 +1,4 @@
-# Install script for directory: /home/game/envs/hanabi
+# Install script for directory: /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/game/envs/hanabi/build/hanabi_lib/cmake_install.cmake")
+  include("/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build/hanabi_lib/cmake_install.cmake")
 
 endif()
 
@@ -51,5 +51,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/game/envs/hanabi/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

@@ -8,6 +8,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from core.test import test
+from core.pytest import test as pytest
 from core.train import train, super, make_dataset,test_mcts
 from core.train_blocks import supervised_train
 from core.utils import init_logger, make_results_dir, set_seed
@@ -21,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--extra',default='none',type=str,help='extra information in log directory')
     parser.add_argument('--case', required=True, choices=['atari', 'mujoco', 'classic_control', 'box2d', 'bin_drop','hanabi'],
                         help="It's used for switching between different domains(default: %(default)s)")
-    parser.add_argument('--opr', required=True, choices=['train', 'test', 'make_dataset', 'super', 'debug','mcts'])
+    parser.add_argument('--opr', required=True, choices=['train', 'test', 'pytest','make_dataset', 'super', 'debug','mcts'])
     parser.add_argument('--no_cuda', action='store_true', default=False, help='no cuda usage (default: %(default)s)')
     parser.add_argument('--debug', action='store_true', default=False,
                         help='If enabled, logs additional values  '
@@ -71,7 +72,6 @@ if __name__ == '__main__':
                         '/root/models/v5/model_100000.p'],
                         help='load model path for making dataset')
     parser.add_argument('--test_begin', type=int, default=1, help='begin model idx')
-    parser.add_argument('--test_end', type=int, default=5, help='end model idx')
     parser.add_argument('--use_critic', action='store_true', default=False,
                         help='use global critic')
 
@@ -88,6 +88,8 @@ if __name__ == '__main__':
     parser.add_argument('--stack', type=int, default=4, help='stacked frame')
     parser.add_argument('--decay_step', type=int, default=200000, help='decay step')
     parser.add_argument('--decay_rate', type=float, default=0.8, help='decay rate')
+    parser.add_argument('--test_start', type=int, default=1, help='start test')
+    parser.add_argument('--test_end', type=int, default=2, help='end test')
     args = parser.parse_args()
     args.device = 'cuda' if (not args.no_cuda) and torch.cuda.is_available() else 'cpu'
     assert args.revisit_policy_search_rate is None or 0 <= args.revisit_policy_search_rate <= 1, \
@@ -163,8 +165,35 @@ if __name__ == '__main__':
                 model_path = args.model_path
             else:
                 model_path = None
-            model, weights = test_mcts(muzero_config, summary_writer, model_path)
         elif args.opr == 'test':
+            assert args.load_model
+            if args.model_path is None:
+                model_path = muzero_config.model_path
+            else:
+                print("loading my model!")
+                model_path = args.model_path
+            parent_model_path=model_path
+            test_range=[1] if (args.test_start==1) else np.arange(args.test_start,args.test_end)
+            for idx in test_range:
+                model_path=parent_model_path+"/model_"+str(int(idx*10000))+".p"
+                assert os.path.exists(model_path), 'model not found at {}'.format(model_path)
+
+                model = muzero_config.get_uniform_network().to('cuda')
+                # for name, param in model.named_parameters():
+                #     print(name,param.shape)
+                new_model=torch.load(model_path)
+                # print("====>",type(new_model))
+                # for k,v in new_model.items():
+                #     print(k,v.shape)
+                model.load_state_dict(torch.load(model_path, map_location=torch.device('cuda')))
+                test_score, test_path = test(muzero_config, model, 0, args.test_episodes, device='cuda', render=False,save_video=False, final_test=True)
+                mean_score = sum(test_score) / len(test_score)
+                print("model: {}, mean: {}".format(idx*10000, mean_score),flush=True)
+                # logging.getLogger('test').info('Test Score: {}'.format(test_score))
+                # logging.getLogger('test').info('Test Mean Score: {}'.format(mean_score))
+                # logging.getLogger('test').info('Saving video in path: {}'.format(test_path))
+            model, weights = test_mcts(muzero_config, summary_writer, model_path)
+        elif args.opr == 'pytest':
             assert args.load_model
             if args.model_path is None:
                 model_path = muzero_config.model_path
@@ -184,12 +213,13 @@ if __name__ == '__main__':
                 # for k,v in new_model.items():
                 #     print(k,v.shape)
                 model.load_state_dict(torch.load(model_path, map_location=torch.device('cuda')))
-                test_score, test_path = test(muzero_config, model, 0, args.test_episodes, device='cuda', render=False,save_video=False, final_test=True)
+                test_score, test_path = pytest(muzero_config, model, 0, args.test_episodes, device='cuda', render=False,save_video=False, final_test=True)
                 mean_score = sum(test_score) / len(test_score)
                 print("model: {}, mean: {}".format(idx*10000, mean_score),flush=True)
                 # logging.getLogger('test').info('Test Score: {}'.format(test_score))
                 # logging.getLogger('test').info('Test Mean Score: {}'.format(mean_score))
                 # logging.getLogger('test').info('Saving video in path: {}'.format(test_path))
+            model, weights = test_mcts(muzero_config, summary_writer, model_path)
         elif args.opr == 'make_dataset':
             assert args.load_model
             if args.make_dataset_model_path is None:

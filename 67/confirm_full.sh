@@ -8,20 +8,20 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 #python main.py --env KangarooNoFrameskip-v4 --case atari --opr train --seed 0 --num_gpus 4 --num_cpus 48 --force --batch_actor 42 \
 #58
 #46/9
-python3 ../main.py --env Hanabi-Full --case hanabi --opr train --seed 10 --num_gpus 4 --num_cpus 80 --force --batch_actor 50\
+python3 ../main.py --env Hanabi-Full --case hanabi --opr train --seed 10 --num_gpus 4 --num_cpus 80 --force --batch_actor 48\
   --p_mcts_num 8\
-  --extra full_2p_reanal \
+  --extra reproduce_best \
   --use_priority \
   --use_max_priority \
-  --revisit_policy_search_rate 0.99 \
+  --revisit_policy_search_rate 0.999 \
   --amp_type 'torch_amp' \
   --reanalyze_part 'paper' \
-  --info 'full_partial_rescale_legel_4_stack_td_8_sim_100' \
-  --actors 18 \
-  --simulations 100 \
+  --info 'full_share_rescale_legel_4_stack_td_5_sim_80' \
+  --actors 16 \
+  --simulations 80 \
   --batch_size 256 \
   --val_coeff 0.25 \
-  --td_step 8 \
+  --td_step 5 \
   --debug_interval 100 \
   --lr 0.1 \
   --decay_rate 0.5 \

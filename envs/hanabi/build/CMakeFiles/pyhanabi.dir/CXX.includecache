@@ -6,21 +6,21 @@
 
 #IncludeRegexTransform: 
 
-/home/game/envs/hanabi/hanabi_lib/canonical_encoders.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/canonical_encoders.h
 vector
 -
 hanabi_game.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_game.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_game.h
 hanabi_observation.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_observation.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_observation.h
 observation_encoder.h
-/home/game/envs/hanabi/hanabi_lib/observation_encoder.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/observation_encoder.h
 
-/home/game/envs/hanabi/hanabi_lib/hanabi_card.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_card.h
 string
 -
 
-/home/game/envs/hanabi/hanabi_lib/hanabi_game.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_game.h
 random
 -
 string
@@ -30,11 +30,11 @@ unordered_map
 vector
 -
 hanabi_card.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_card.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_card.h
 hanabi_move.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_move.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_move.h
 
-/home/game/envs/hanabi/hanabi_lib/hanabi_hand.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_hand.h
 cstdint
 -
 string
@@ -42,41 +42,41 @@ string
 vector
 -
 hanabi_card.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_card.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_card.h
 
-/home/game/envs/hanabi/hanabi_lib/hanabi_history_item.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_history_item.h
 cstdint
 -
 string
 -
 hanabi_move.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_move.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_move.h
 
-/home/game/envs/hanabi/hanabi_lib/hanabi_move.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_move.h
 cstdint
 -
 string
 -
 
-/home/game/envs/hanabi/hanabi_lib/hanabi_observation.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_observation.h
 string
 -
 vector
 -
 hanabi_card.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_card.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_card.h
 hanabi_game.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_game.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_game.h
 hanabi_hand.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_hand.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_hand.h
 hanabi_history_item.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_history_item.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_history_item.h
 hanabi_move.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_move.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_move.h
 hanabi_state.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_state.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_state.h
 
-/home/game/envs/hanabi/hanabi_lib/hanabi_state.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_state.h
 random
 -
 string
@@ -84,23 +84,23 @@ string
 vector
 -
 hanabi_card.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_card.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_card.h
 hanabi_game.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_game.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_game.h
 hanabi_hand.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_hand.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_hand.h
 hanabi_history_item.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_history_item.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_history_item.h
 hanabi_move.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_move.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_move.h
 
-/home/game/envs/hanabi/hanabi_lib/observation_encoder.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/observation_encoder.h
 vector
 -
 hanabi_observation.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_observation.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_observation.h
 
-/home/game/envs/hanabi/hanabi_lib/util.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/util.h
 cassert
 -
 cstdlib
@@ -110,9 +110,9 @@ string
 unordered_map
 -
 
-/home/game/envs/hanabi/pyhanabi.cc
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/pyhanabi.cc
 pyhanabi.h
-/home/game/envs/hanabi/pyhanabi.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/pyhanabi.h
 cstdlib
 -
 cstring
@@ -126,23 +126,23 @@ string
 unordered_map
 -
 hanabi_lib/canonical_encoders.h
-/home/game/envs/hanabi/hanabi_lib/canonical_encoders.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/canonical_encoders.h
 hanabi_lib/hanabi_card.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_card.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_card.h
 hanabi_lib/hanabi_game.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_game.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_game.h
 hanabi_lib/hanabi_history_item.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_history_item.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_history_item.h
 hanabi_lib/hanabi_move.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_move.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_move.h
 hanabi_lib/hanabi_observation.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_observation.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_observation.h
 hanabi_lib/hanabi_state.h
-/home/game/envs/hanabi/hanabi_lib/hanabi_state.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/hanabi_state.h
 hanabi_lib/observation_encoder.h
-/home/game/envs/hanabi/hanabi_lib/observation_encoder.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/observation_encoder.h
 hanabi_lib/util.h
-/home/game/envs/hanabi/hanabi_lib/util.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib/util.h
 
-/home/game/envs/hanabi/pyhanabi.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/pyhanabi.h
 

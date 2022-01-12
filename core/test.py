@@ -20,7 +20,7 @@ from core.py_mcts import Node as py_Node
 
 def test(config, model, counter, test_episodes, device, render, save_video=False, final_test=False):
     #print("start testing!!!",flush=True)
-    #test_episodes=10
+    test_episodes=100
     model.to(device)
     model.eval()
     save_path = os.path.join(config.exp_path, 'recordings', 'step_{}'.format(counter))
@@ -108,9 +108,9 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
                 ep_step[i]+=1
             step += 1
 
-        for i in range(test_episodes):
-            print('===========>Test episode {}:  reward={}, step={}, final_reward={}'.format(i, ep_ori_rewards[i],ep_step[i],ep_final_rewards[i]),flush=True)
+    #    for i in range(test_episodes):
+    #        print('===========>Test episode {}:  reward={}, step={}, final_reward={}'.format(i, ep_ori_rewards[i],ep_step[i],ep_final_rewards[i]),flush=True)
 
-        print(ep_final_rewards,ep_ori_rewards)
+    #    print(ep_final_rewards,ep_ori_rewards)
         env.close()
     return ep_ori_rewards, save_path

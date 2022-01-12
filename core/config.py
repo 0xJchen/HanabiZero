@@ -125,7 +125,7 @@ class BaseMuZeroConfig(object):
         self.window_size = window_size
         self.transition_num = transition_num
         self.batch_size = batch_size
-        self.num_unroll_steps = 5
+        self.num_unroll_steps = 6
         self.td_steps = td_steps
         self.frame_skip = frame_skip
         self.stacked_observations = stacked_observations

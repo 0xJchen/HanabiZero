@@ -58,7 +58,7 @@ def _log(config, step_count, log_data, model, replay_buffer, lr, shared_storage,
     _msg = '#{:<10} Total Loss: {:<8.3f} [weighted Loss:{:<8.3f} Policy Loss: {:<8.3f} Value Loss: {:<8.3f} ' \
            'Reward Loss: {:<8.3f} Consistency Loss: {:<8.3f} ] ' \
            'Replay Episodes Collected: {:<10d} Buffer Size: {:<10d} Transition Number: {:<8.3f}k ' \
-           'Batch Size: {:<10d} Lr: {:<8.3f}'
+           'Batch Size: {:<10d} Lr: {:<8.5f}'
     _msg = _msg.format(step_count, total_loss, weighted_loss, policy_loss, value_loss, reward_loss, consistency_loss,
                        replay_episodes_collected, replay_buffer_size, total_num / 1000, config.batch_size, lr)
     train_logger.info(_msg)
@@ -762,7 +762,9 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
     with autocast():
         value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
+    #print("====>in train,",type(value),flush=True)
     scaled_value = config.inverse_value_transform(value)
+    #print("in train2,",type(scaled_value),flush=True)
     #print("inference shape: ",value.shape,policy_logits.shape,hidden_state.shape,flush=True)
 
     #print("inference shape: value={}, policy_logits={}, hidden_state={}, scaled_value={}".format(value.shape, policy_logits.shape,hidden_state.shape,scaled_value.shape),flush=True)
@@ -979,7 +981,12 @@ def adjust_lr(config, optimizer, step_count, scheduler):
             scheduler.step()
             lr = optimizer.param_groups[0]['lr']
         else:
-            lr = config.lr_init * config.lr_decay_rate ** ((step_count - config.lr_warm_step) // config.lr_decay_steps)
+
+            tmp_lr = config.lr_init * config.lr_decay_rate ** ((step_count - config.lr_warm_step) // config.lr_decay_steps)
+            #if tmp_lr >= 0.001:
+            lr=tmp_lr
+            #else:
+            #    lr=0.001
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
 
@@ -1293,7 +1300,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
-            time.sleep(0.08)#0.3->2
+            time.sleep(0.1)#0.3->2
             #print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),config.debug_batch,flush=True)
             if _debug_batch:
                 #print("_train(): waiting batch storage,step=",step_count,flush=True)
@@ -1401,7 +1408,7 @@ def train(config, summary_writer=None, model_path=None):
 
     storage = SharedStorage.remote(model, target_model, latest_model)
 
-    batch_storage = BatchStorage(30, 50)
+    batch_storage = BatchStorage(50, 70)
 
     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
 

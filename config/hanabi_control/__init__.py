@@ -15,7 +15,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
             test_interval=1000,#changed to 1000
             log_interval=1000,
             vis_interval=1000,
-            test_episodes=28,
+            test_episodes=40,
             checkpoint_interval=1000,
             target_model_interval=200,#changed from 1k @wjc
             save_ckpt_interval=10000,
@@ -156,9 +156,9 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             test_interval=4000,#changed to 1000
             log_interval=1000,
             vis_interval=1000,
-            test_episodes=28,
+            test_episodes=40,
             checkpoint_interval=2000,
-            target_model_interval=400,
+            target_model_interval=200,
             save_ckpt_interval=10000,
             max_moves=160,#@wjc
             test_max_moves=160,#@wjc
@@ -181,13 +181,13 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.001,#changed from 0.002 @jc, this is fraction of warm up steps
+            lr_warm_up=0.0001,#changed from 0.002 @jc, this is fraction of warm up steps
             lr_type='step',
             lr_init=args.lr,
             lr_decay_rate=args.decay_rate,
             lr_decay_steps=args.decay_step,#changed from 0.5m
             # replay window
-            start_window_size=5,#@wjc mannualy changed to 10(final model) for debugging
+            start_window_size=20,#@wjc mannualy changed to 10(final model) for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation
@@ -216,7 +216,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
         self.game_name=None
     def visit_softmax_temperature_fn(self, num_moves, trained_steps):
         if self.change_temperature:
-            if trained_steps < 0.5 * self.training_steps:
+            if trained_steps < 0.25 * self.training_steps:
                 return 1.0
             elif trained_steps < 0.75 * self.training_steps:
                 return 0.5
@@ -267,7 +267,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
         #     env = EpisodicLifeEnv(env)
         #print("======>seed=",seed)
         if seed is not None:
-            arg={"hanabi_name":self.env_name,"seed":seed}
+            arg={"hanabi_name":self.env_name,"seed":seed+np.random.randint(9999)}
         else:
             arg={"hanabi_name":self.env_name,"seed":None}
         #print(arg.keys(),flush=True)

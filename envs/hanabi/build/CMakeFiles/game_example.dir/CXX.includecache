@@ -100,7 +100,7 @@ vector
 hanabi_observation.h
 ../hanabi_lib/hanabi_observation.h
 
-/home/game/envs/hanabi/examples/game_example.cc
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/examples/game_example.cc
 cassert
 -
 cstring
@@ -116,9 +116,9 @@ string
 unordered_map
 -
 hanabi_game.h
-/home/game/envs/hanabi/examples/hanabi_game.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/examples/hanabi_game.h
 hanabi_state.h
-/home/game/envs/hanabi/examples/hanabi_state.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/examples/hanabi_state.h
 canonical_encoders.h
-/home/game/envs/hanabi/examples/canonical_encoders.h
+/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/examples/canonical_encoders.h
 

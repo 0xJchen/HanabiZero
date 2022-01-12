@@ -212,9 +212,9 @@ class MuZeroNetFull(BaseMuZeroNet):
        #                                      nn.BatchNorm1d(self.feature_size),
        #                                      nn.ReLU()
        #                                      )
-       # self._representation = nn.Sequential(nn.Linear(input_size,self.init_size),nn.BatchNorm1d(self.init_size),nn.ReLU(),\
-      #                                       nn.Linear(self.init_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),\
-      #                                       ResMLP(self.feature_size))
+        #self._representation = nn.Sequential(nn.Linear(input_size,self.init_size),nn.BatchNorm1d(self.init_size),nn.ReLU(),\
+        #                                     nn.Linear(self.init_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),\
+        #                                     ResMLP(self.feature_size))
         self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),ResMLP(self.feature_size))
         self._dynamics_state = DynamicNet(self.feature_size, action_space_n)
         self._dynamics_reward = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
@@ -286,7 +286,7 @@ class MuZeroNetFull(BaseMuZeroNet):
         return actor_logit, value
 
     def representation(self, obs_history):
-        # print("representation net: ",obs_history.shape)
+        #print("representation net: ",obs_history.shape,flush=True)
         if not self.state_norm:
             return self._representation(obs_history)
         else:

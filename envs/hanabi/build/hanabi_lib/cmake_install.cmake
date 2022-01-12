@@ -1,4 +1,4 @@
-# Install script for directory: /home/game/envs/hanabi/hanabi_lib
+# Install script for directory: /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
