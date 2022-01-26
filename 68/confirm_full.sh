@@ -18,14 +18,14 @@ python3 ../main.py --env Hanabi-Full --case hanabi --opr train --seed 10 --num_g
   --reanalyze_part 'paper' \
   --info 'full_share_rescale_legel_4_stack_td_5_sim_80' \
   --actors 20 \
-  --simulations 60 \
+  --simulations 50 \
   --batch_size 256 \
   --val_coeff 0.25 \
   --td_step 6 \
   --debug_interval 100 \
   --lr 0.1 \
-  --decay_rate 1 \
-  --decay_step 1000000 \
+  --decay_rate 0.9 \
+  --decay_step 500000 \
   --stack 1
 
   #--debug_batch \

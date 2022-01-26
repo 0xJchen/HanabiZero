@@ -13,6 +13,7 @@ from torch.cuda.amp import autocast as autocast
 from torch.cuda.amp import GradScaler as GradScaler
 from ray.util.queue import Queue
 from ray.util.multiprocessing import Pool
+from .reanal import gpu_num, BatchWorker_CPU,BatchWorker_GPU
 
 import core.ctree.cytree as cytree
 from .mcts import MCTS, get_node_distribution
@@ -31,7 +32,7 @@ except:
 train_logger = logging.getLogger('train')
 test_logger = logging.getLogger('train_test')
 
-gpu_num=0.06#0.13 for full
+
 
 def soft_update(target, source, tau):
     for target_param, param in zip(target.parameters(), source.parameters()):
@@ -292,9 +293,20 @@ class DataWorker(object):
         self.last_model_index = -1
 
     def put(self, data):
+        game_histories,_=data
+
+        #Jan, 2021
+        #reshape reward -> turn reward
+        prev_r=game_histories.rewards[0]
+        for step_id in range(1, len(game_histories.rewards)):
+            cur_r=game_histories.rewards[step_id]+prev_r
+            prev_r=game_histories.rewards[step_id]
+            game_histories.rewards[step_id]=cur_r
+
         self.trajectory_pool.append(data)
 
     def put_last_trajectory(self, i, last_game_histories, last_game_priorities, game_histories):
+        assert False
         # pad over last block trajectory
         beg_index = self.config.stacked_observations
         end_index = beg_index + self.config.num_unroll_steps
@@ -403,10 +415,7 @@ class DataWorker(object):
                 search_values_lst = [[] for _ in range(env_nums)]
                 # predicted value of target network
                 pred_values_lst = [[] for _ in range(env_nums)]
-                # observed n-step return
-                # obs_value_lst = [[] for _ in range(env_nums)]
 
-                # end_tags = [False for _ in range(env_nums)]
 
                 eps_ori_reward_lst, eps_reward_lst, eps_steps_lst, visit_entropies_lst = np.zeros(env_nums), np.zeros(env_nums), np.zeros(env_nums), np.zeros(env_nums)
                 step_counter = 0
@@ -493,6 +502,7 @@ class DataWorker(object):
 
                             # pad over last block trajectory
                             if last_game_histories[i] is not None:
+                                assert False
                                 self.put_last_trajectory(i, last_game_histories, last_game_priorities, game_histories)
 
                             # store current block trajectory
@@ -645,8 +655,8 @@ class DataWorker(object):
                     if dones[i]:
                         # pad over last block trajectory
                         if last_game_histories[i] is not None:
+                            assert False
                             self.put_last_trajectory(i, last_game_histories, last_game_priorities, game_histories)
-
                         # store current block trajectory
                         priorities = self.get_priorities(i, pred_values_lst, search_values_lst)
                         game_histories[i].game_over()
@@ -663,6 +673,7 @@ class DataWorker(object):
                         self_play_episodes += 1
                     else:
                         # not save this data
+                        #assert False
                         total_transitions -= len(game_histories[i])
 
 
@@ -696,8 +707,15 @@ def sanity_check(arr,name):
 def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_result=False):
     #total_transitions = ray.get(replay_buffer.get_total_len.remote())
     total_transitions=0
-    obs_batch_ori, action_batch, mask_batch, target_reward, target_value, target_policy, indices, weights_lst, make_time = batch
-    # print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
+
+    inputs_batch, targets_batch = batch
+    obs_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time = inputs_batch
+    target_reward, target_value, target_policy = targets_batch
+
+    #================
+    # obs_batch_ori, action_batch, mask_batch, target_reward, target_value, target_policy, indices, weights_lst, make_time = batch
+    #================
+    #print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
     #n=["obs","a","mask","re","val","p","idx","weight_idx","make_time"]
     #for idx,item in enumerate(batch):
     #    sanity_check(item,n[idx])
@@ -758,16 +776,13 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
     transformed_target_value = config.scalar_transform(target_value)
     target_value_phi = config.value_phi(transformed_target_value)
-    #print("target: ",target_value.shape,transformed_target_value.shape,target_value_phi.shape,flush=True)
+    # print("target: ",target_value.shape,transformed_target_value.shape,target_value_phi.shape,flush=True)
 
     with autocast():
+        # print("start learner inference",obs_batch.shape,obs_batch.reshape(batch_size, -1).shape,flush=True)
         value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
     #print("====>in train,",type(value),flush=True)
     scaled_value = config.inverse_value_transform(value)
-    #print("in train2,",type(scaled_value),flush=True)
-    #print("inference shape: ",value.shape,policy_logits.shape,hidden_state.shape,flush=True)
-
-    #print("inference shape: value={}, policy_logits={}, hidden_state={}, scaled_value={}".format(value.shape, policy_logits.shape,hidden_state.shape,scaled_value.shape),flush=True)
     if vis_result:
         state_lst = hidden_state.detach().cpu().numpy()
 
@@ -870,7 +885,6 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
     #loss = ( config.policy_loss_coeff * policy_loss +
      #       config.value_loss_coeff * value_loss + config.reward_loss_coeff * reward_loss)
-    #print("==========>loss",weights.shape,loss.shape,flush=True)
     weighted_loss = (weights * loss).mean()
 
     # L2 reg
@@ -1000,16 +1014,17 @@ def add_batch(batch, m_batch):
 
 
 class BatchStorage(object):
-    def __init__(self, threshold=15, size=20):#8,16
+    def __init__(self, threshold=15, size=20,name=''):#8,16
         self.threshold = threshold
         self.batch_queue = Queue(maxsize=size)
+        self.name=name
 
     def push(self, batch):
         if self.batch_queue.qsize() <= self.threshold:
             self.batch_queue.put(batch)
         else:
             pass
-            #print("full",flush=True)
+            # print(self.name+"full",flush=True)
 
     def pop(self):
         if self.batch_queue.qsize() > 0:
@@ -1025,8 +1040,6 @@ class BatchStorage(object):
             return True
         else:
             return False
-        #print("full!",flush=True)
-        #return self.get_len()>=self.threshold
 
 @ray.remote(num_gpus=gpu_num,num_cpus=1)
 class BatchWorker(object):
@@ -1059,7 +1072,6 @@ class BatchWorker(object):
                 # print("batch worker waiting replay_buffer.get_total_len.remote()) >= config.start_window_size",flush=True)
 
                 continue
-            # print("batch worker starting run",flush=True)
             # TODO: use latest weights for policy reanalyze
             ray_data_lst = [self.storage.get_counter.remote(), self.storage.get_target_weights.remote()]
             trained_steps, target_weights = ray.get(ray_data_lst)
@@ -1071,9 +1083,6 @@ class BatchWorker(object):
             game_lst, game_pos_lst, _, _, _=batch_context
             #temporarily save the obs list
 
-
-            # print("batch worker finished prepare batch context",flush=True)
-            # break
             if trained_steps >= self.config.training_steps + self.config.last_steps:
                 # print("batchworker finished working",flush=True)
                 break
@@ -1092,9 +1101,7 @@ class BatchWorker(object):
                     # print("batch worker finish makeing batch, start to push",flush=True)
                     #if self.batch_storage.is_full():
                      #   print("{} is sleeping, buffer={}".format(self.worker_id,self.batch_storage.get_len()),flush=True)
-                     #   time.sleep(15)
                     self.batch_storage.push(batch)
-                    #time.sleep(randint(1,4))
                 except:
                     print('=====================>Data is deleted...')
                     #assert False
@@ -1121,7 +1128,6 @@ class BatchWorker(object):
         return batch_context_lst
 
     def concat_batch(self, batch_lst):
-        # print("4",flush=True)
         batch = [[] for _ in range(8 + 1)]
 
         for i in range(len(batch_lst)):
@@ -1130,22 +1136,14 @@ class BatchWorker(object):
                     batch[j] = batch_lst[i][j]
                 else:
                     batch[j] = np.concatenate((batch[j], batch_lst[i][j]), axis=0)
-        # print("5",flush=True)
         return batch
 
     def make_batch(self, batch_context, ratio, weights=None, batch_num=2):
-        # print("1",flush=True)
         batch_context_lst = self.split_context(batch_context, batch_num)#game_lst, game_pos_lst, indices_lst, weights_lst, make_time_lst = batch_context
-        # print("2",flush=True)
         batch_lst = []
         for i in range(len(batch_context_lst)):
-            # print("start making batch = ",i,flush=True)
-            # print("batch_context_lst size=",len(batch_context_lst),flush=True)
 
             batch_lst.append(self._make_batch(batch_context_lst[i], ratio, weights))
-            # print("finish making batch = ",i,len(batch_context_lst),flush=True)
-            # print("2."+str(i),flush=True)
-        # print("3",flush=True)
         return self.concat_batch(batch_lst)
 
     def _make_batch(self, batch_context, ratio, weights=None):
@@ -1154,45 +1152,25 @@ class BatchWorker(object):
             self.target_model.to('cuda')
             self.target_model.eval()
             # print('weight is not none! change weights!',flush=True)
-        # print("m1",flush=True)s
         game_lst, game_pos_lst, indices_lst, weights_lst, make_time_lst = batch_context
         batch_size = len(indices_lst)
-        # print("in batchwoker's make_batch,(64/128?)batchsize=",batch_size)
         obs_lst, action_lst, mask_lst = [], [], []
-        # print("m2",flush=True)
         for i in range(batch_size):
-            # print("in _make_batch, ",i,flush=True)
             game = game_lst[i]
-            # print("00",flush=True)
             game_pos = game_pos_lst[i]
-            # print("11",flush=True)
             _actions = game.actions[game_pos:game_pos + self.config.num_unroll_steps].tolist()
-            # print("22",flush=True)
             _mask = [1. for i in range(len(_actions))]
-            # print("33",flush=True)
             _mask += [0. for _ in range(self.config.num_unroll_steps - len(_mask))]
-            # print("44",flush=True)
             _actions += [np.random.randint(0, game.action_space_size) for _ in range(self.config.num_unroll_steps - len(_actions))]
-            # print("55",flush=True)
-            #try:
-                # game_lst[i]
-                # print("game_lst-i ",game_lst[i],flush=True)
-                # print()
-            obs_lst.append(game_lst[i].obs(game_pos_lst[i], extra_len=self.config.num_unroll_steps, padding=True))#<===== problem
-            #except:
-            #    assert False
 
-            # print("66",flush=True)
+            obs_lst.append(game_lst[i].obs(game_pos_lst[i], extra_len=self.config.num_unroll_steps, padding=True))#<===== problem
+
             action_lst.append(_actions)
             mask_lst.append(_mask)
-        # print("m3",flush=True)
         re_num = int(batch_size * ratio)#ratio is config.revisit_policy_search_rate
         obs_lst = prepare_observation_lst(obs_lst, image_based=self.config.image_based)
         batch = [obs_lst, action_lst, mask_lst, [], [], [], indices_lst, weights_lst, make_time_lst]
-        # print("m4",flush=True)
         if self.config.reanalyze_part == 'paper':
-            # value + policy (reanalyze part)
-            # print("start reanalyze",flush=True)
             re_value, re_reward, re_policy = prepare_multi_target(self.replay_buffer, indices_lst[:re_num],
                                                                   make_time_lst[:re_num],
                                                                   game_lst[:re_num], game_pos_lst[:re_num],
@@ -1200,7 +1178,6 @@ class BatchWorker(object):
             batch[3].append(re_reward)
             batch[4].append(re_value)
             batch[5].append(re_policy)
-            # print("ffinish multi target",flush=True)
             # only value
             if re_num < batch_size:
                 re_value, re_reward, re_policy = prepare_multi_target_only_value(game_lst[re_num:], game_pos_lst[re_num:],
@@ -1209,7 +1186,6 @@ class BatchWorker(object):
                 batch[4].append(re_value)
                 batch[5].append(re_policy)
         elif self.config.reanalyze_part == 'none':
-            #print("gg",flush=True)
             re_value, re_reward, re_policy = prepare_multi_target_none(game_lst[:], game_pos_lst[:],
                                                                                  self.config, self.target_model)
             batch[3].append(re_reward)
@@ -1223,20 +1199,12 @@ class BatchWorker(object):
             batch[3].append(re_reward)
             batch[4].append(re_value)
             batch[5].append(re_policy)
-        # print("finish reanalyze,len(batch)=",len(batch),flush=True)
         for i in range(len(batch)):
             if i in range(3, 6):
                 batch[i] = np.concatenate(batch[i])
             else:
                 batch[i] = np.asarray(batch[i])
 
-        # weights_lst = batch[-2]
-        # weight_max = np.percentile(weights_lst, 90)
-        # weights_lst = (weights_lst / weight_max).clip(0., 1.0)
-        # batch[-2] = weights_lst
-        # print("start returning batch", flush=True)
-       # for i in batch:
-       #     print("batch shape",i.shape,flush=True,end="")
         return batch
 
 
@@ -1268,9 +1236,13 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         config.set_transforms()
 
     # wait for all replay buffer to be non-empty
+    last=0
+    mv=3
     while not (ray.get(replay_buffer.get_total_len.remote()) >= config.start_window_size):
-        print("waiting in _train,buffer size ={0} /{1}".format(ray.get(replay_buffer.get_total_len.remote()),config.start_window_size),flush=True)
-        time.sleep(1)
+        cur=ray.get(replay_buffer.get_total_len.remote())
+        print("waiting in _train,buffer size ={} /{}, speed={:.1f}".format(cur,config.start_window_size,(cur-last)/mv),flush=True)
+        last=cur
+        time.sleep(mv)
         pass
     print('in _train, Begin training...')
     shared_storage.set_start_signal.remote()
@@ -1288,23 +1260,15 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
 
         # @profile
         # def f(batch_count, step_count, lr, make_time):
-        if step_count % 500 == 0:#@wjc changed to 100 for debugging
+        if step_count % 200 == 0:#@wjc changed to 100 for debugging
             replay_buffer.remove_to_fit.remote()
-        # while True:
-        #@wjc
-        #if step_count%100==0:
-            #print("in _train,step={2}: step_count={0}, batch storage size={1} ".format(step_count, batch_storage.get_len(),step_count),flush=True)
-
-        #    print("in _train,step={}:  ".format(step_count),flush=True)
 
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
-            time.sleep(0.1)#0.3->2
-            #print("_train(): waiting batch storage,step/current batch storage_Size=",step_count,batch_storage.get_len(),config.debug_batch,flush=True)
-            if _debug_batch:
-                #print("_train(): waiting batch storage,step=",step_count,flush=True)
-                print("LEARNER WAITING!",flush=True)
+            time.sleep(0.5)#0.3->2
+            # if _debug_batch:
+            # print("LEARNER WAITING!",flush=True)
             continue
         # print("making one batch takes: ", time.time()-before_btch,flush=True)
         shared_storage.incr_counter.remote()
@@ -1348,17 +1312,11 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     #        _interval=config.debug_interval
 
         if step_count%_interval==0:
-        #if step_count%1==0:
-           # print("===========>100 lr step, cost [{}] s, buffer = {}".format(time.time()-time_100k,ray.get(replay_buffer.get_total_len.remote())),flush=True)
+
             _time=time.time()-time_100k
-            print("===========>{} lr step, cost [{}] s; <==>[{}] s/100lr".format(_interval,_time,_time/(_interval/500)),flush=True)
+            print("===>step={} ;cost [{:.2f}] s/{}steps; <==>[{:.2f}] s/1klr".format(step_count,_time,_interval,_time/(_interval/1000)),flush=True)
             time_100k=time.time()
-        #    if step_count % 1000 ==0:
-        #        print("buffer transitions=",ray.get(replay_buffer.get_total_len.remote()),flush=True)
-        # if(step_count%50==0):
-        #     _test(config, shared_storage)
-       # if step_count % 100000==0:
-       #    replay_buffer.save_files.remote()
+
         if step_count % config.save_ckpt_interval == 0:
             model_path = os.path.join(config.model_dir, 'model_{}.p'.format(step_count))
             torch.save(model.state_dict(), model_path)
@@ -1389,8 +1347,9 @@ def _test(config, shared_storage):
 
             shared_storage.add_test_log.remote(test_score)
         #print("============================>Sleeping Test!")
-        time.sleep(120)
+        time.sleep(180)
         #print("============================>Waking up Test!")
+
 
 
 def train(config, summary_writer=None, model_path=None):
@@ -1408,22 +1367,27 @@ def train(config, summary_writer=None, model_path=None):
 
     storage = SharedStorage.remote(model, target_model, latest_model)
 
-    batch_storage = BatchStorage(50, 70)
+    batch_storage = BatchStorage(20, 30,'batch')
+    mcts_storage = BatchStorage(20, 30,'mcts')
 
     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
 
-    #batch_actor=5
-    batch_workers = [BatchWorker.remote(idx, replay_buffer, storage, batch_storage, config)
-                     for idx in range(config.batch_actor)]#by wjc
+    workers=[]
+    # reanalyze workers
+    cpu_workers = [BatchWorker_CPU.remote(idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.cpu_actor)]
+    workers += [cpu_worker.run.remote() for cpu_worker in cpu_workers]
+    gpu_workers = [BatchWorker_GPU.remote(idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.gpu_actor)]
+    workers += [gpu_worker.run.remote() for gpu_worker in gpu_workers]
+
 
     # self-play
     #num_actors=2
-    workers = [DataWorker.remote(rank, config, storage, replay_buffer) for rank in range(config.num_actors)] #changed to 1 actor
-    workers = [worker.run_multi.remote() for worker in workers]
+    data_workers = [DataWorker.remote(rank, config, storage, replay_buffer) for rank in range(config.num_actors)] #changed to 1 actor
+    workers += [worker.run_multi.remote() for worker in data_workers]
     # ray.get(replay_buffer.random_init_trajectory.remote(200))
 
     # batch maker
-    workers += [batch_worker.run.remote() for batch_worker in batch_workers]
+    # workers += [batch_worker.run.remote() for batch_worker in batch_workers]
     # time.sleep(5)
     # storage.set_start_signal.remote()
     # for batch_worker in batch_workers:
@@ -1440,6 +1404,59 @@ def train(config, summary_writer=None, model_path=None):
     ray.wait(workers)
 
     return model, final_weights
+
+
+#old version of train
+#=============================================================================
+# def train(config, summary_writer=None, model_path=None):
+#     model = config.get_uniform_network()
+#     target_model = config.get_uniform_network()
+#     latest_model = config.get_uniform_network()
+#     #assert model_path is not None
+#     if model_path:
+#         print('>>>>>>>>>>>>>>>>resume model from path: ', model_path,flush=True)
+#         weights = torch.load(model_path)
+
+#         model.load_state_dict(weights)
+#         target_model.load_state_dict(weights)
+#         latest_model.load_state_dict(weights)
+
+#     storage = SharedStorage.remote(model, target_model, latest_model)
+
+#     batch_storage = BatchStorage(30, 40)
+
+
+#     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
+
+#     #batch_actor=5
+#     batch_workers = [BatchWorker.remote(idx, replay_buffer, storage, batch_storage, config)
+#                      for idx in range(config.batch_actor)]#by wjc
+
+#     # self-play
+#     #num_actors=2
+#     workers = [DataWorker.remote(rank, config, storage, replay_buffer) for rank in range(config.num_actors)] #changed to 1 actor
+#     workers = [worker.run_multi.remote() for worker in workers]
+#     # ray.get(replay_buffer.random_init_trajectory.remote(200))
+
+#     # batch maker
+#     workers += [batch_worker.run.remote() for batch_worker in batch_workers]
+#     # time.sleep(5)
+#     # storage.set_start_signal.remote()
+#     # for batch_worker in batch_workers:
+#         # print("launch batch")
+#         # batch_worker.run()
+#     # while True:
+#         # print("batch storage size ",(batch_storage.get_len()),flush=True)
+#         # time.sleep(2)
+#     # test
+#     workers += [_test.remote(config, storage)]
+#     # train
+#     final_weights = _train(model, target_model, latest_model, config, storage, replay_buffer, batch_storage, summary_writer)
+#     # wait all
+#     ray.wait(workers)
+
+#     return model, final_weights
+#=============================================================================
 
 def test_mcts(config, summary_writer=None, model_path=None):
     model = config.get_uniform_network()

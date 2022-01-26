@@ -84,12 +84,14 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=256, help='batch size')
     parser.add_argument('--debug_batch', action='store_true', default=False, help='show empty batch steps')
     # Process arguments
-    parser.add_argument('--debug_interval', type=int, default=500, help='show batch time interval')
+    parser.add_argument('--debug_interval', type=int, default=100, help='show batch time interval')
     parser.add_argument('--stack', type=int, default=4, help='stacked frame')
     parser.add_argument('--decay_step', type=int, default=200000, help='decay step')
-    parser.add_argument('--decay_rate', type=float, default=0.8, help='decay rate')
+    parser.add_argument('--decay_rate', type=float, default=1, help='decay rate')
     parser.add_argument('--test_start', type=int, default=1, help='start test')
     parser.add_argument('--test_end', type=int, default=2, help='end test')
+    parser.add_argument('--cpu_actor', type=int, default=14, help='batch cpu actor')
+    parser.add_argument('--gpu_actor', type=int, default=20, help='batch bpu actor')
     args = parser.parse_args()
     args.device = 'cuda' if (not args.no_cuda) and torch.cuda.is_available() else 'cpu'
     assert args.revisit_policy_search_rate is None or 0 <= args.revisit_policy_search_rate <= 1, \
@@ -97,7 +99,7 @@ if __name__ == '__main__':
 
     if args.opr == 'train':
         ray.init(num_gpus=args.num_gpus, num_cpus=args.num_cpus,
-              object_store_memory=300*1024*1024*1024,dashboard_port=8267, dashboard_host='0.0.0.0')
+              object_store_memory=150*1024*1024*1024,dashboard_port=8265, dashboard_host='0.0.0.0')
                 #   object_store_memory=200*1024*1024*1024, dashboard_port=9999,dashboard_host='0.0.0.0'  )
 		#object_store_memory=150 * 1024 * 1024 * 1024)
     else:

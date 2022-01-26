@@ -125,7 +125,7 @@ class BaseMuZeroConfig(object):
         self.window_size = window_size
         self.transition_num = transition_num
         self.batch_size = batch_size
-        self.num_unroll_steps = 6
+        self.num_unroll_steps = 5
         self.td_steps = td_steps
         self.frame_skip = frame_skip
         self.stacked_observations = stacked_observations
@@ -156,7 +156,7 @@ class BaseMuZeroConfig(object):
         self.lr_init = lr_init
         self.lr_decay_rate = lr_decay_rate
         self.lr_decay_steps = lr_decay_steps
-        self.target_infer_size = 64
+        self.target_infer_size =64
         self.consist_type = consist_type
 
         # replay buffer
@@ -222,8 +222,8 @@ class BaseMuZeroConfig(object):
         output = sign * output * delta
 
         nan_part = torch.isnan(output)
-        if nan_part.any():
-            print('===========> in {} transform [ERROR]: NAN in scalar!!!'.format(mode),flush=True)
+        # if nan_part.any():
+        #     print('===========> in {} transform [ERROR]: NAN in scalar!!!'.format(mode),flush=True) when calling inverse_scalar_transform
         output[nan_part] = 0.
         return output
 
@@ -272,6 +272,8 @@ class BaseMuZeroConfig(object):
         # self.priority_top = args.priority_top
         self.write_back = args.write_back
         self.p_mcts_num = args.p_mcts_num
+        self.cpu_actor=args.cpu_actor
+        self.gpu_actor=args.gpu_actor
         # self.use_root_value = args.use_root_value
         self.reanalyze_part = args.reanalyze_part
         self.target_moving_average = args.target_moving_average

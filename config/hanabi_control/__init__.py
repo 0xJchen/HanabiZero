@@ -10,7 +10,7 @@ import numpy as np
 class HanabiControlConfig(BaseMuZeroConfig):
     def __init__(self,args):
         super(HanabiControlConfig, self).__init__(
-            training_steps=100000,
+            training_steps=200000,
             last_steps=0,
             test_interval=1000,#changed to 1000
             log_interval=1000,
@@ -40,13 +40,13 @@ class HanabiControlConfig(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.1,
+            lr_warm_up=0.01,
             lr_type='step',
             lr_init=args.lr,
-            lr_decay_rate=0.5,
+            lr_decay_rate=args.decay_rate,
             lr_decay_steps=20000,
             # replay window
-            start_window_size=5,#@wjc mannualy changed to 1 for debugging
+            start_window_size=10000,#@wjc mannualy changed from 40 to 1 for debugging
             window_size=125000,#useless
             transition_num=1,
             # frame skip & stack observation
@@ -72,6 +72,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
         self.image_channel = 1
         self.game_name=None
     def visit_softmax_temperature_fn(self, num_moves, trained_steps):
+        assert self.change_temperature==False
         if self.change_temperature:
             if trained_steps < 0.5 * self.training_steps:
                 return 1.0
@@ -156,7 +157,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             test_interval=4000,#changed to 1000
             log_interval=1000,
             vis_interval=1000,
-            test_episodes=40,
+            test_episodes=80,
             checkpoint_interval=2000,
             target_model_interval=200,
             save_ckpt_interval=10000,
@@ -187,7 +188,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             lr_decay_rate=args.decay_rate,
             lr_decay_steps=args.decay_step,#changed from 0.5m
             # replay window
-            start_window_size=20,#@wjc mannualy changed to 10(final model) for debugging
+            start_window_size=40,#@wjc mannualy changed to 10(final model) for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation
@@ -210,7 +211,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
         # self.max_moves //= self.frame_skip#@wjc max move should just be 80
         # self.test_max_moves //= self.frame_skip
 
-        self.start_window_size = self.start_window_size * 200 // self.frame_skip#whta fuck?
+        self.start_window_size = self.start_window_size * 100 // self.frame_skip#whta fuck?
         self.start_window_size = max(1, self.start_window_size)
         self.image_channel = 1
         self.game_name=None
@@ -266,10 +267,10 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
         # if self.episode_life and not test:
         #     env = EpisodicLifeEnv(env)
         #print("======>seed=",seed)
-        if seed is not None:
-            arg={"hanabi_name":self.env_name,"seed":seed+np.random.randint(9999)}
-        else:
-            arg={"hanabi_name":self.env_name,"seed":None}
+        # if seed is not None:
+        arg={"hanabi_name":self.env_name,"seed":seed}
+        # else:
+        #     arg={"hanabi_name":self.env_name,"seed":None}
         #print(arg.keys(),flush=True)
         #print("=======================>starting new simulation")
         env=HanabiEnv(arg)

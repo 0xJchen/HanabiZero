@@ -200,6 +200,7 @@ class MuZeroNetFull(BaseMuZeroNet):
         self.action_space_n = action_space_n
         self.feature_size = 512
         self.init_size= 1024
+        self.actor_hidden = 128
         self.hidden_size = 256
         #print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
        # self._representation = nn.Sequential(nn.Linear(input_size, self.init_size),
@@ -224,7 +225,11 @@ class MuZeroNetFull(BaseMuZeroNet):
         self._prediction_actor = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
                                                nn.BatchNorm1d(self.hidden_size),
                                                nn.ReLU(),
-                                               nn.Linear(self.hidden_size, action_space_n))
+                                               nn.Linear(self.hidden_size, action_space_n),
+                                               nn.BatchNorm1d(self.action_space_n),
+                                               nn.ReLU(),
+                                               nn.Linear(self.action_space_n,action_space_n)
+                                               )
         self._prediction_value = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
                                                nn.BatchNorm1d(self.hidden_size),
                                                nn.ReLU(),
@@ -306,13 +311,26 @@ class MuZeroNetFull(BaseMuZeroNet):
                                      dtype=torch.float32, device=action.device)
         action_one_hot.scatter_(1, action, 1.0)
 
-        x = torch.cat((state, action_one_hot), dim=1)
-        next_state = self._dynamics_state(x)
+        x = torch.cat((state, action_one_hot), dim=1)#x is fine here.
+        next_state = self._dynamics_state(x)#next_state.max() might contain inf, which leads to inf when 
         reward = self._dynamics_reward(next_state)
+
+        # for nan_idx in range(reward.shape[0]):
+        #     r_nan=torch.isnan(reward[nan_idx]).any()
+        #     x_nan=torch.isnan(x[nan_idx]).any()
+        #     n_nan=torch.isnan(next_state[nan_idx]).any()
+        #     if r_nan:
+        #         print("batch idx=",nan_idx,flush=True)
+        #         print("in dynamcis,x={},next={},reward={}".format(x_nan,n_nan,r_nan),flush=True)
+        #         print("===>x",x_nan,x[nan_idx].max(),x[nan_idx].min(),flush=True)
+        #         print("===>next_state",n_nan,next_state[nan_idx].max(),flush=True)
+        #         # print("===>reward",reward[nan_idx],flush=True)
+        #         torch.save(next_state[nan_idx],'next_state_'+str(nan_idx))
 
         if not self.state_norm:
             return next_state, reward
         else:
+            assert False
         # Scale encoded state between [0, 1] (See paper appendix Training)
             min_next_state = next_state.view(-1, next_state.shape[1]).min(1, keepdim=True)[0]
             max_next_state = next_state.view(-1,next_state.shape[1]).max(1, keepdim=True)[0]

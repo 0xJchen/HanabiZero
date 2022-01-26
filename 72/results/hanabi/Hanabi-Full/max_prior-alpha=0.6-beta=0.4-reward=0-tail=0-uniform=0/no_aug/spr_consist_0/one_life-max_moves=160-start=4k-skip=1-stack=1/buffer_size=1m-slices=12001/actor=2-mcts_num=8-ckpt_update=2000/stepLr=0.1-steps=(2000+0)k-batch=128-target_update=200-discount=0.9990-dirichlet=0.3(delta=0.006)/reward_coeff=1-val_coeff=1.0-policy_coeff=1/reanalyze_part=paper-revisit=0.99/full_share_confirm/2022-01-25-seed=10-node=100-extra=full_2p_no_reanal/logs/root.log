@@ -1,0 +1,10 @@
+[2022-01-25 07:15:22,990][root][ERROR][main.py><module>] ==> name 'summary_writer' is not defined
+Traceback (most recent call last):
+  File "../main.py", line 197, in <module>
+    model, weights = test_mcts(muzero_config, summary_writer, model_path)
+NameError: name 'summary_writer' is not defined
+[2022-01-25 08:35:49,402][root][ERROR][main.py><module>] ==> name 'summary_writer' is not defined
+Traceback (most recent call last):
+  File "../main.py", line 197, in <module>
+    model, weights = test_mcts(muzero_config, summary_writer, model_path)
+NameError: name 'summary_writer' is not defined

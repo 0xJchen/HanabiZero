@@ -1,7 +1,7 @@
 #set -ex
 export CUDA_DEVICE_ORDER='PCI_BUS_ID'
 #export CUDA_VISIBLE_DEVICES=0,1,2
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=2
 #export CUDA_VISIBLE_DEVICES=3,4,5,6
 
 #python main.py --env KangarooNoFrameskip-v4 --case atari --opr train --seed 0 --num_gpus 3 --num_cpus 60 --force --batch_actor 28 \
@@ -18,15 +18,17 @@ python3 ../main.py --env Hanabi-Full --case hanabi --opr test --seed 10 --num_gp
   --reanalyze_part 'paper' \
   --info 'full_share_confirm' \
   --actors 2 \
-  --simulations 50 \
+  --simulations 60 \
   --batch_size 128 \
   --val_coeff 1 \
-  --td_step 6 \
+  --td_step 5 \
   --debug_interval 100 \
   --lr 0.1 \
-  --stack 1
+  --stack 1 \
   --load_model \
-  --model_path 'final_model.p'
+  --model_path 'recent/model' \
+  --test_start 70 \
+  --test_end 97
 
   #--debug_batch \
 

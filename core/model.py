@@ -103,6 +103,13 @@ class BaseMuZeroNet(nn.Module):
         state, reward = self.dynamics(hidden_state, action)
         actor_logit, value = self.prediction(state)
 
+        # r_nan=torch.isnan(reward).any()
+        # v_nan=torch.isnan(value).any()
+        # h_nan=torch.isnan(hidden_state).any()
+        # a_nan=torch.isnan(action).any()
+        # if v_nan or r_nan:
+        #     print("[recirretn inference], value={},reward={},hidden={},action={},h-shape={},a-shape={}".format(r_nan,v_nan,h_nan,a_nan,hidden_state.shape,action.shape),flush=True)
+        
         if not self.training:
             value = self.inverse_value_transform(value).detach().cpu().numpy()
             reward = self.inverse_reward_transform(reward).detach().cpu().numpy()

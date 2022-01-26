@@ -9,14 +9,14 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 #58
 python3 ../main.py --env Hanabi-Small --case hanabi --opr train --seed 1 --num_gpus 4 --num_cpus 70 --force --batch_actor 40\
   --p_mcts_num 8\
-  --extra none \
+  --extra confirming_no_p_target_mask_small_buffer_610more_actor \
   --use_priority \
   --use_max_priority \
   --revisit_policy_search_rate 0.99 \
   --amp_type 'torch_amp' \
   --reanalyze_part 'paper' \
   --info 'small_share_1_stack_rescale_legal' \
-  --actors 6 \
+  --actors 12 \
   --simulations 50 \
   --batch_size 256 \
   --val_coeff 0.25 \
@@ -24,7 +24,8 @@ python3 ../main.py --env Hanabi-Small --case hanabi --opr train --seed 1 --num_g
   --debug_interval 100 \
   --debug_batch \
   --lr 0.1 \
-  --stack 4
+  --decay_rate 1\
+  --stack 1
  # --load_model \
 #  --model_path 'model_confirm_small_200k.p'
 

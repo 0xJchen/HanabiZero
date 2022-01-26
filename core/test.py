@@ -1,4 +1,5 @@
 import os
+from unittest import mock
 
 import torch
 import numpy as np
@@ -23,7 +24,38 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
     test_episodes=100
     model.to(device)
     model.eval()
+    
+    
+    # torch.set_printoptions(profile='full')
+    # mock_next_state=torch.load('/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/72/next_state_41')
+    # mock_next_state=mock_next_state.to(device)
+    # # for parallel_idx in range(mock_next_state.shape[0]):
+    #     # if torch.isnan(mock_next_state[parallel_idx]).any():
+    # parallel_idx=41
+    # mk=mock_next_state[parallel_idx].float().unsqueeze(0)
+
+    # # mock_reward=model._dynamics_reward(mk)
+    # l1=model._dynamics_reward[0](mk)
+    # bn=model._dynamics_reward[1](l1)
+    # relu=model._dynamics_reward[2](bn)
+    # mock_reward=model._dynamics_reward[3](relu)
+    # if torch.isnan(mock_reward).any():
+    #     print(parallel_idx)
+    #     print("next state=",torch.isnan(mk).any(),flush=True)
+    #     print("mock reward=",torch.isnan(mock_reward).any(),flush=True)
+    #     print('state',mk)
+    #     print('reward',mock_reward)
+    #     print('l1',l1)
+    #     print('bn',bn)
+    #     print('relu',relu)
+    #     print('l2',mock_reward)
+
+
+
+    # assert False
+
     save_path = os.path.join(config.exp_path, 'recordings', 'step_{}'.format(counter))
+
 
     with torch.no_grad():
         envs = [config.new_game(seed=i, save_video=save_video, save_path=save_path, test=True, final_test=final_test,

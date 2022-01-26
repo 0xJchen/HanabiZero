@@ -1,0 +1,5 @@
+[2022-01-17 09:50:37,049][train_test][INFO][train.py>_log] ==> #0          Test Mean Score: 1.37      (Max: 6         )
+[2022-01-17 10:01:36,082][train_test][INFO][train.py>_log] ==> #5000       Test Mean Score: 1.81      (Max: 7         )
+[2022-01-17 10:16:15,689][train_test][INFO][train.py>_log] ==> #9000       Test Mean Score: 1.32      (Max: 6         )
+[2022-01-17 10:34:54,215][train_test][INFO][train.py>_log] ==> #13000      Test Mean Score: 1.51      (Max: 7         )
+[2022-01-17 10:53:44,065][train_test][INFO][train.py>_log] ==> #17000      Test Mean Score: 2.0       (Max: 7         )

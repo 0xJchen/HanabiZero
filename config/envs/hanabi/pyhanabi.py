@@ -189,7 +189,7 @@ class HanabiCard(object):
     return self._color == other.color() and self._rank == other.rank()
 
   def valid(self):
-    return self._color >= 0 and self._rank >= 0
+    return self._color >and self._rank >= 0
 
   def to_dict(self):
     """Serialize to dict.

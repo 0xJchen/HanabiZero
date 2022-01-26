@@ -187,7 +187,7 @@ def prepare_observation(observation):
     return observation
 
 
-def prepare_observation_lst(observation_lst, image_based=True):
+def prepare_observation_lst(observation_lst, image_based=False):
     if image_based:
         # B, S, W, H, C
         observation_lst = np.array(observation_lst, dtype=np.uint8)
