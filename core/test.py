@@ -21,7 +21,7 @@ from core.py_mcts import Node as py_Node
 
 def test(config, model, counter, test_episodes, device, render, save_video=False, final_test=False):
     #print("start testing!!!",flush=True)
-    test_episodes=100
+    test_episodes=1000
     model.to(device)
     model.eval()
     
@@ -114,7 +114,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
             # print('===>[test]---step {}---'.format(step),flush=True)
             for i in range(test_episodes):
                 if dones[i]:
-                    #print("===>I finished testing!",flush=True)
+                    # print("===>{} finished testing! with last legal length={}".format(i, (game_histories[i].legal_actions[-1])),flush=True)
                     continue
 
                 distributions, value, env = roots_distributions[i], roots_values[i], envs[i]

@@ -92,6 +92,8 @@ if __name__ == '__main__':
     parser.add_argument('--test_end', type=int, default=2, help='end test')
     parser.add_argument('--cpu_actor', type=int, default=14, help='batch cpu actor')
     parser.add_argument('--gpu_actor', type=int, default=20, help='batch bpu actor')
+    parser.add_argument('--tail_bootstrp', action='store_true', default=False,
+                        help='max priority')
     args = parser.parse_args()
     args.device = 'cuda' if (not args.no_cuda) and torch.cuda.is_available() else 'cpu'
     assert args.revisit_policy_search_rate is None or 0 <= args.revisit_policy_search_rate <= 1, \
@@ -136,9 +138,13 @@ if __name__ == '__main__':
 
     # set-up logger
     init_logger(log_base_path)
-
+    def warnn(msg,status):
+        print("*"*80)
+        print("You are using "+msg+"=",status)
+        print("*"*80)
     try:
         if args.opr == 'train':
+            warnn('tail bootstrap',args.tail_bootstrp)
             summary_writer = SummaryWriter(exp_path, flush_secs=10)
             print("path: ",args.load_model)
             print("exist",args.model_path,os.path.exists(args.model_path))

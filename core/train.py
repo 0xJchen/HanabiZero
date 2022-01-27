@@ -715,7 +715,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     #================
     # obs_batch_ori, action_batch, mask_batch, target_reward, target_value, target_policy, indices, weights_lst, make_time = batch
     #================
-    #print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
+    print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
     #n=["obs","a","mask","re","val","p","idx","weight_idx","make_time"]
     #for idx,item in enumerate(batch):
     #    sanity_check(item,n[idx])
@@ -779,7 +779,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     # print("target: ",target_value.shape,transformed_target_value.shape,target_value_phi.shape,flush=True)
 
     with autocast():
-        # print("start learner inference",obs_batch.shape,obs_batch.reshape(batch_size, -1).shape,flush=True)
+        print("start learner inference",obs_batch.shape,obs_batch.reshape(batch_size, -1).shape,flush=True)
         value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
     #print("====>in train,",type(value),flush=True)
     scaled_value = config.inverse_value_transform(value)
@@ -997,10 +997,10 @@ def adjust_lr(config, optimizer, step_count, scheduler):
         else:
 
             tmp_lr = config.lr_init * config.lr_decay_rate ** ((step_count - config.lr_warm_step) // config.lr_decay_steps)
-            #if tmp_lr >= 0.001:
-            lr=tmp_lr
-            #else:
-            #    lr=0.001
+            if tmp_lr >= 0.001:
+                lr=tmp_lr
+            else:
+                lr=0.001
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
 

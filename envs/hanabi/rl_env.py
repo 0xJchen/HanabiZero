@@ -147,7 +147,7 @@ class HanabiEnv(Environment):
         config={
                "colors":2,
                "ranks":5,
-               "players":3,
+               "players":2,
                "hand_size":2,
                "max_information_tokens":3,
                "max_life_tokens":1,

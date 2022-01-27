@@ -43,7 +43,7 @@ class BatchWorker_CPU(object):
         self.config = config
 
         self.last_model_index = -1
-        self.batch_max_num = 20
+        # self.batch_max_num = 20
         self.beta_schedule = LinearSchedule(config.training_steps + config.last_steps, initial_p=config.priority_prob_beta, final_p=1.0)
         self.mcts_buffer_max = 20
 
@@ -80,6 +80,11 @@ class BatchWorker_CPU(object):
                     end_index = beg_index + config.stacked_observations
                     obs = game_obs[beg_index:end_index]
                 else:
+                    # if self.config.tail_bootstrap:# which td-bootstrap state-value should I use? (as long as current index is real game state, always bootstrap!)
+                    #     value_mask.append(1)
+                    #     obs=game_obs[-config.stacked_observations:]
+                    # else:
+                        # assert False
                     value_mask.append(0)
                     obs = zero_obs
 
@@ -169,6 +174,7 @@ class BatchWorker_CPU(object):
         re_num = int(batch_size * ratio)
         # formalize the input observations
         obs_lst = prepare_observation_lst(obs_lst,image_based=False)
+        # print("in reanal, obs shape={}".format(obs_lst.shape),flush=True)#(256, 6, 193)
         # formalize the inputs of a batch
         inputs_batch = [obs_lst, action_lst, mask_lst, indices_lst, weights_lst, make_time_lst]
         for i in range(len(inputs_batch)):
