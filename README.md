@@ -1,7 +1,8 @@
-# muzero-pytorch
+# HanabiZero
 Pytorch Implementation of MuZero : "[Mastering Atari , Go, Chess and Shogi by Planning with a Learned Model](https://arxiv.org/pdf/1911.08265.pdf)"  based on [pseudo-code](https://arxiv.org/src/1911.08265v1/anc/pseudocode.py) provided by the authors
 
-_Note: This implementation has just been tested on CartPole-v1 and would required modifications(`in config folder`) for other environments_
+Solve cooperative imperfect information multi-agent game "Hanabi" with SoTA model-based reinforcement learning methods from scratch through self-play and without human knowledge. Moreover, we developed a novel method called "oracle regression" which is the first method that distills the knowledge of the ground truth states into partially observed states.
+
 
 ### Installation
 ```bash
@@ -38,16 +39,8 @@ pip install -r requirements.txt
 ```Note: default: None => Values are loaded from the corresponding config```
 
 ## Training
-### CartPole-v1
-- Curves represents model evaluation for 5 episodes at 100 step training interval. 
-- Also, each curve is a  mean scores over 5 runs (seeds : [0,100,200,300,400])
 
-| |
-|:--|
-|![](static/imgs/cartpole_test_score.png)|
-|![](static/imgs/legend_cartpole.png)|
-
-
+simply run train.sh
 
 
 
