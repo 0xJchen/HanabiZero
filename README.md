@@ -52,3 +52,6 @@ On `4*RTX3090`, training on `Hanabi-Small` takes roughly 4 hours to reach `9/10`
 
 - option 1: using docker.
 - option 2: install `requirements.txt` manually
+
+- remember to install the requirements for `Hanabi` Env in `./env`. Also, after modifying the environment itself, rebuild it with `cd env/hanabi && rm -rf build && mkdir build && cd build && cmake .. && make `.
+- after modifying `core/ctree`, rebuild with `cd core/ctree && sh make.sh`
