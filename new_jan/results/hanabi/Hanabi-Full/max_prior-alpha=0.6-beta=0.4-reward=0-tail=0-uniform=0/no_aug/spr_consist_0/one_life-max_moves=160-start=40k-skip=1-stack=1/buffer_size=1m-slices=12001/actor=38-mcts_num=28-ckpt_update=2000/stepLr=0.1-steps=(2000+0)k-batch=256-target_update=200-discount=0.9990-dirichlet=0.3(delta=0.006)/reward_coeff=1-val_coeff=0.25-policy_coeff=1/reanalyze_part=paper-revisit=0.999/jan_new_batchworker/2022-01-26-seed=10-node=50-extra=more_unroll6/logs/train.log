@@ -1,1 +1,0 @@
-[2022-01-26 07:25:56,333][train][INFO][train.py>_log] ==> #0          Total Loss: 48.433   [weighted Loss:48.433   Policy Loss: 13.961   Value Loss: 31.821   Reward Loss: 26.517   Consistency Loss: 0.000    ] Replay Episodes Collected: 4046       Buffer Size: 4046       Transition Number: 48.478  k Batch Size: 256        Lr: 0.00000 

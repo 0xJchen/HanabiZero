@@ -1,3 +1,0 @@
-
-now all full game play in partial information
-original is 400, changed to 201

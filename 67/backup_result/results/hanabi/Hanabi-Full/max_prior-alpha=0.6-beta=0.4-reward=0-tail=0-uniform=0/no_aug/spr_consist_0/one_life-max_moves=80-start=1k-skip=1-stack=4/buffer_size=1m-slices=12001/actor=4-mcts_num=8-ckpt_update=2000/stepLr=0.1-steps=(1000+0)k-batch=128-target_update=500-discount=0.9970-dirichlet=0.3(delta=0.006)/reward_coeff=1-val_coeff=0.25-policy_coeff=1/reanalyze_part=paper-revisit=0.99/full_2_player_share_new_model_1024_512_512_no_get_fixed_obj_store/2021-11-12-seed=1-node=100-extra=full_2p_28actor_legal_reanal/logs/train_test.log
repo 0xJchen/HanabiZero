@@ -1,7 +1,0 @@
-[2021-11-12 15:31:59,121][train_test][INFO][train.py>_log] ==> #0          Test Mean Score: 1.1071428571428572(Max: 6         )
-[2021-11-12 15:52:33,772][train_test][INFO][train.py>_log] ==> #6000       Test Mean Score: 1.7142857142857142(Max: 6         )
-[2021-11-12 16:07:09,370][train_test][INFO][train.py>_log] ==> #10000      Test Mean Score: 2.0       (Max: 5         )
-[2021-11-12 16:22:44,971][train_test][INFO][train.py>_log] ==> #14000      Test Mean Score: 2.142857142857143(Max: 6         )
-[2021-11-12 16:40:47,136][train_test][INFO][train.py>_log] ==> #18000      Test Mean Score: 2.0       (Max: 6         )
-[2021-11-12 16:58:40,920][train_test][INFO][train.py>_log] ==> #22000      Test Mean Score: 2.857142857142857(Max: 6         )
-[2021-11-12 17:19:37,879][train_test][INFO][train.py>_log] ==> #26000      Test Mean Score: 3.2857142857142856(Max: 6         )
