@@ -16,3 +16,4 @@ __pycache__/
 *.0
 *.p
 .history/*
+.vscode/*

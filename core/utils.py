@@ -41,9 +41,10 @@ class MaxAndSkipEnv(gym.Wrapper):
         """Return only every `skip`-th frame"""
         gym.Wrapper.__init__(self, env)
         # most recent raw observations (for max pooling across time steps)
-        self._obs_buffer = np.zeros((2,)+env.observation_space.shape, dtype=np.uint8)
-        self._skip       = skip
-        self._use_max    = use_max
+        self._obs_buffer = np.zeros(
+            (2,)+env.observation_space.shape, dtype=np.uint8)
+        self._skip = skip
+        self._use_max = use_max
         self.max_frame = np.zeros(env.observation_space.shape, dtype=np.uint8)
 
     def step(self, action):
@@ -52,8 +53,10 @@ class MaxAndSkipEnv(gym.Wrapper):
         done = None
         for i in range(self._skip):
             obs, reward, done, info = self.env.step(action)
-            if i == self._skip - 2: self._obs_buffer[0] = obs
-            if i == self._skip - 1: self._obs_buffer[1] = obs
+            if i == self._skip - 2:
+                self._obs_buffer[0] = obs
+            if i == self._skip - 1:
+                self._obs_buffer[1] = obs
             total_reward += reward
             if done:
                 break
@@ -71,7 +74,8 @@ class MaxAndSkipEnv(gym.Wrapper):
 
     def render(self, mode='human', **kwargs):
         img = self.max_frame
-        img = cv2.resize(img, (400, 400), interpolation=cv2.INTER_AREA).astype(np.uint8)
+        img = cv2.resize(
+            img, (400, 400), interpolation=cv2.INTER_AREA).astype(np.uint8)
         if mode == 'rgb_array':
             return img
         elif mode == 'human':
@@ -104,7 +108,8 @@ def make_results_dir(exp_path, args):
     os.makedirs(exp_path, exist_ok=True)
     if args.opr == 'train' and os.path.exists(exp_path) and os.listdir(exp_path):
         if not args.force:
-            raise FileExistsError('{} is not empty. Please use --force to overwrite it'.format(exp_path))
+            raise FileExistsError(
+                '{} is not empty. Please use --force to overwrite it'.format(exp_path))
         else:
             print('Warning, path exists! Rewriting...')
             shutil.rmtree(exp_path)
@@ -116,7 +121,8 @@ def make_results_dir(exp_path, args):
 
 
 def init_logger(base_path):
-    formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s][%(filename)s>%(funcName)s] ==> %(message)s')
+    formatter = logging.Formatter(
+        '[%(asctime)s][%(name)s][%(levelname)s][%(filename)s>%(funcName)s] ==> %(message)s')
     for mode in ['train', 'test', 'train_test', 'root']:
         file_path = os.path.join(base_path, mode + '.log')
         logger = logging.getLogger(mode)
@@ -128,17 +134,15 @@ def init_logger(base_path):
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
 
-#@wjc
-def select_action(visit_counts, temperature=1, deterministic=True,legal_actions=None):
-    assert (legal_actions is not None)
-    # print("in select action: ",np.asarray(legal_actions).shape,np.asarray(visit_counts).shape)
-    # print(legal_actions,visit_counts)
-    for action_idx,_ in enumerate(legal_actions):
-        if (legal_actions[action_idx]==0) and visit_counts[action_idx]>=1:
-            # print("illegal action detected during decision with %d  visit" % visit_counts[action_idx])
-            visit_counts[action_idx]=0
 
-    action_probs = [visit_count_i ** (1 / temperature) for visit_count_i in visit_counts]
+def select_action(visit_counts, temperature=1, deterministic=True, legal_actions=None):
+    assert (legal_actions is not None)
+    for action_idx, _ in enumerate(legal_actions):
+        if (legal_actions[action_idx] == 0) and visit_counts[action_idx] >= 1:
+            visit_counts[action_idx] = 0
+
+    action_probs = [visit_count_i ** (1 / temperature)
+                    for visit_count_i in visit_counts]
     total_count = sum(action_probs)
     action_probs = [x / total_count for x in action_probs]
     if deterministic:
@@ -152,18 +156,21 @@ def select_action(visit_counts, temperature=1, deterministic=True,legal_actions=
 
 def time_calculate(func):
     import time
+
     def time_wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
 
-        print('|func: [%r] took: %2.4f seconds|' % (func.__name__, end_time - start_time))
+        print('|func: [%r] took: %2.4f seconds|' %
+              (func.__name__, end_time - start_time))
         return result
     return time_wrapper
 
 
 def profile(func):
     from line_profiler import LineProfiler
+
     def wrapper(*args, **kwargs):
         lp = LineProfiler()
         lp_wrapper = lp(func)
@@ -194,7 +201,8 @@ def prepare_observation_lst(observation_lst, image_based=False):
         observation_lst = np.moveaxis(observation_lst, -1, 2)
 
         shape = observation_lst.shape
-        observation_lst = observation_lst.reshape((shape[0], -1, shape[-2], shape[-1]))
+        observation_lst = observation_lst.reshape(
+            (shape[0], -1, shape[-2], shape[-1]))
     else:
         observation_lst = np.array(observation_lst)
 

@@ -41,7 +41,6 @@ def concat_output(output_lst):
     value_lst = np.concatenate(value_lst)
     reward_lst = np.concatenate(reward_lst)
     policy_logits_lst = np.concatenate(policy_logits_lst)
-    # hidden_state_lst = torch.cat(hidden_state_lst, 0)
     hidden_state_lst = np.concatenate(hidden_state_lst)
 
     return value_lst, reward_lst, policy_logits_lst, hidden_state_lst
@@ -74,77 +73,18 @@ class BaseMuZeroNet(nn.Module):
         num = obs.size(0)
         return NetworkOutput(value, [0. for _ in range(num)], actor_logit, state)
 
-    # def initial_inference_slices(self, obs, slices : int) -> NetworkOutput:
-    #     if not self.training:
-    #         values, actor_logits, states = [], [], []
-    #         m_batch = obs.shape[0] // slices
-    #
-    #         for i in range(slices):
-    #             beg_index = m_batch * i
-    #             end_index = m_batch * (i + 1)
-    #             state = self.representation(obs[beg_index:end_index])
-    #             actor_logit, value = self.prediction(state)
-    #
-    #             value = self.inverse_value_transform(value).detach().cpu().numpy()
-    #             state = state.detach().cpu().numpy()
-    #             actor_logit = actor_logit.detach().cpu().numpy()
-    #
-    #             values.append(value)
-    #             actor_logits.append(actor_logit)
-    #             states.append(state)
-    #
-    #         values = np.concatenate(values)
-    #         actor_logits = np.concatenate(actor_logits)
-    #         states = np.concatenate(states)
-    #
-    #         return NetworkOutput(values, [[0.] for _ in range(obs.shape[0])], actor_logits, states)
-
     def recurrent_inference(self, hidden_state, action) -> NetworkOutput:
         state, reward = self.dynamics(hidden_state, action)
         actor_logit, value = self.prediction(state)
 
-        # r_nan=torch.isnan(reward).any()
-        # v_nan=torch.isnan(value).any()
-        # h_nan=torch.isnan(hidden_state).any()
-        # a_nan=torch.isnan(action).any()
-        # if v_nan or r_nan:
-        #     print("[recirretn inference], value={},reward={},hidden={},action={},h-shape={},a-shape={}".format(r_nan,v_nan,h_nan,a_nan,hidden_state.shape,action.shape),flush=True)
-        
         if not self.training:
             value = self.inverse_value_transform(value).detach().cpu().numpy()
-            reward = self.inverse_reward_transform(reward).detach().cpu().numpy()
+            reward = self.inverse_reward_transform(
+                reward).detach().cpu().numpy()
             state = state.detach().cpu().numpy()
             actor_logit = actor_logit.detach().cpu().numpy()
 
         return NetworkOutput(value, reward, actor_logit, state)
-
-    # def recurrent_inference_slices(self, hidden_state, action, slices : int) -> NetworkOutput:
-    #     if not self.training:
-    #         values, rewards, actor_logits, states = [], [], [], []
-    #         m_batch = hidden_state.shape[0] // slices
-    #
-    #         for i in range(slices):
-    #             beg_index = m_batch * i
-    #             end_index = m_batch * (i + 1)
-    #             state, reward = self.dynamics(hidden_state[beg_index:end_index], action[beg_index:end_index])
-    #             actor_logit, value = self.prediction(state)
-    #
-    #             value = self.inverse_value_transform(value).detach().cpu().numpy()
-    #             reward = self.inverse_reward_transform(reward).detach().cpu().numpy()
-    #             state = state.detach().cpu().numpy()
-    #             actor_logit = actor_logit.detach().cpu().numpy()
-    #
-    #             values.append(value)
-    #             rewards.append(reward)
-    #             actor_logits.append(actor_logit)
-    #             states.append(state)
-    #
-    #         values = np.concatenate(values)
-    #         rewards = np.concatenate(rewards)
-    #         actor_logits = np.concatenate(actor_logits)
-    #         states = np.concatenate(states)
-    #
-    #         return NetworkOutput(values, rewards, actor_logits, states)
 
     def get_weights(self):
         return {k: v.cpu() for k, v in self.state_dict().items()}

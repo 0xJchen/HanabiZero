@@ -117,32 +117,6 @@ class HanabiEnv(Environment):
               "observation_type":pyhanabi.AgentObservationType.CARD_KNOWLEDGE.value,
               "seed":seed
           }
-   # elif args.hanabi_name == "Hanabi-Full-Minimal":# max:action 48 obs=680 min:action=20 obs=433 score=25 use memory
-    #config={
-    #        "colors": 5,
-    #        "ranks": 5,
-    #        "players": 2,
-    #        "max_information_tokens": 8,
-    #        "max_life_tokens": 3,
-    #        "observation_type": pyhanabi.AgentObservationType.MINIMAL.value,
-    #        "seed":1
-    #    }
-    ## elif args.hanabi_name == "Hanabi-Small": # max:action=32 obs=356 min:action=11 obs=191 score=10
-    #   config={
-    #           "colors":2,
-    #           "ranks":5,
-    #           "players":args.num_agents,
-    #           "hand_size":2,
-    #           "max_information_tokens":3,
-    #           "max_life_tokens":1,
-    #           "observation_type":pyhanabi.AgentObservationType.CARD_KNOWLEDGE.value,
-    #           "seed":args.seed
-    #       }
-    # elif args.hanabi_name == "Hanabi-Very-Small": # max:action=28 obs=215 min:action=10 obs=116 score=5
-#    if args["seed"]==None:
- #       seed=0
-  #  else:
-   #     seed=args["seed"]
     elif args["hanabi_name"] == 'Hanabi-Small':
         config={
                "colors":2,
@@ -282,24 +256,16 @@ class HanabiEnv(Environment):
         observation["current_player"] = self.state.cur_player()
         agent_turn=np.zeros(self.players).astype(np.int).tolist()
         agent_turn[self.state.cur_player()]=1
-        # print("self.state.cur_player(): ",self.state.cur_player())
-        # obs=[]
         share_obs=[]
         available_actions = np.zeros(self.num_moves())
-        # for i in range(self.players):
         cur_p=self.state.cur_player()
-        # print("in reset,",len(observation['player_observations'][cur_p]['vectorized']))
         obs=observation['player_observations'][cur_p]['vectorized']+agent_turn
         share_obs.append(observation['player_observations'][cur_p]['vectorized_ownhand']+observation['player_observations'][cur_p]['vectorized']+agent_turn)
         available_actions[observation['player_observations'][cur_p]['legal_moves_as_int']]=1
     else:
         obs = np.zeros((self.vectorized_observation_shape()[0]+self.players))
         share_obs = np.zeros((self.vectozed_share_observation_shape()[0]+self.players))
-        # available_actions = np.zeros(self.num_moves())
-    #print("in hanabi env, vec={},my hand={}".format(np.array(observation['player_observations'][cur_p]['vectorized']).shape, np.array(observation['player_observations'][cur_p]['vectorized_ownhand']).shape),flush=True)
-    # return obs, share_obs, available_actions
-    # print("in hanabienv: ",len(obs[0]),len(available_actions),self.vectorized_observation_shape())
-    return share_obs[0], list(available_actions)
+    return share_obs[0],obs, list(available_actions)
     #return obs, list(available_actions)
   def vectorized_observation_shape(self):
     """Returns the shape of the vectorized observation.
@@ -433,7 +399,6 @@ class HanabiEnv(Environment):
     Raises:
       AssertionError: When an illegal action is provided.
     """
-    # action = int(action[self.state.cur_player()][0])
     if isinstance(action, dict):
       # Convert dict action HanabiMove
       action = self._build_move(action)
@@ -462,14 +427,10 @@ class HanabiEnv(Environment):
       self.state.deal_random_card()
 
     observation = self._make_observation_all_players()
-    # obs = []
     share_obs = []
     available_actions = np.zeros(self.num_moves())
-    # available_actions=[0 for i in range(self.num_moves())]
     agent_turn=np.zeros(self.players).astype(np.int).tolist()
     agent_turn[self.state.cur_player()]=1
-    # for i in range(self.players):
-    # obs=observation['player_observations'][self.state.cur_player()]['vectorized'] + agent_turn
     cur_p=self.state.cur_player()
     obs=observation['player_observations'][cur_p]['vectorized']+agent_turn
     share_obs.append(observation['player_observations'][cur_p]['vectorized_ownhand']+observation['player_observations'][cur_p]['vectorized']+agent_turn)
@@ -480,8 +441,7 @@ class HanabiEnv(Environment):
     rewards = self.state.score() - last_score
     # rewards = reward
     infos = {'score':self.state.score()}
-    # print("obs shape: ", len(share_obs[0]),len(obs),flush=True)
-    return share_obs[0], rewards, done, infos, list(available_actions)
+    return share_obs[0],obs, rewards, done, infos, list(available_actions)
    # return obs, rewards, done, infos, list(available_actions)
   def _make_observation_all_players(self):
     """Make observation for all players.

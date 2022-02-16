@@ -13,15 +13,14 @@ from torch.cuda.amp import autocast as autocast
 from torch.cuda.amp import GradScaler as GradScaler
 from ray.util.queue import Queue
 from ray.util.multiprocessing import Pool
-from .reanal import gpu_num, BatchWorker_CPU,BatchWorker_GPU
+from .reanal import gpu_num, BatchWorker_CPU, BatchWorker_GPU
 
 import core.ctree.cytree as cytree
 from .mcts import MCTS, get_node_distribution
 from .replay_buffer import ReplayBuffer
 from .test import test
 from .utils import select_action, profile, prepare_observation_lst, LinearSchedule
-from .vis import show_tree
-from .game import GameHistory, prepare_multi_target, prepare_multi_target_only_value, prepare_multi_target_none
+from .game import GameHistory
 import time
 import numpy as np
 try:
@@ -31,7 +30,6 @@ except:
 ###
 train_logger = logging.getLogger('train')
 test_logger = logging.getLogger('train_test')
-
 
 
 def soft_update(target, source, tau):
@@ -46,7 +44,7 @@ def _log(config, step_count, log_data, model, replay_buffer, lr, shared_storage,
     total_loss, weighted_loss, loss, reg_loss, policy_loss, reward_loss, value_loss, consistency_loss = loss_data
     if vis_result:
         new_priority, target_reward, target_value, trans_target_reward, trans_target_value, target_reward_phi, target_value_phi, \
-        pred_reward, pred_value, target_policies, predicted_policies, state_lst, other_loss, other_log, other_dist = td_data
+            pred_reward, pred_value, target_policies, predicted_policies, state_lst, other_loss, other_log, other_dist = td_data
         batch_weights, batch_indices = priority_data
 
     replay_episodes_collected, replay_buffer_size, priorities, total_num, worker_logs = ray.get([
@@ -65,7 +63,8 @@ def _log(config, step_count, log_data, model, replay_buffer, lr, shared_storage,
     train_logger.info(_msg)
 
     if mean_test_score is not None:
-        test_msg = '#{:<10} Test Mean Score: {:<10}(Max: {:<10})'.format(step_count, mean_test_score, max_test_score)
+        test_msg = '#{:<10} Test Mean Score: {:<10}(Max: {:<10})'.format(
+            step_count, mean_test_score, max_test_score)
         test_logger.info(test_msg)
 
     if summary_writer is not None:
@@ -73,15 +72,18 @@ def _log(config, step_count, log_data, model, replay_buffer, lr, shared_storage,
             for name, W in model.named_parameters():
                 summary_writer.add_histogram('after_grad_clip' + '/' + name + '_grad', W.grad.data.cpu().numpy(),
                                              step_count)
-                summary_writer.add_histogram('network_weights' + '/' + name, W.data.cpu().numpy(), step_count)
+                summary_writer.add_histogram(
+                    'network_weights' + '/' + name, W.data.cpu().numpy(), step_count)
             pass
         tag = 'Train'
         if vis_result:
             summary_writer.add_histogram('{}_replay_data/replay_buffer_priorities'.format(tag),
                                          priorities,
                                          step_count)
-            summary_writer.add_histogram('{}_replay_data/batch_weight'.format(tag), batch_weights, step_count)
-            summary_writer.add_histogram('{}_replay_data/batch_indices'.format(tag), batch_indices, step_count)
+            summary_writer.add_histogram(
+                '{}_replay_data/batch_weight'.format(tag), batch_weights, step_count)
+            summary_writer.add_histogram(
+                '{}_replay_data/batch_indices'.format(tag), batch_indices, step_count)
             # TODO: print out the reward to check the distribution (few 0 out) mean std
             target_reward = target_reward.flatten()
             pred_reward = pred_reward.flatten()
@@ -89,78 +91,117 @@ def _log(config, step_count, log_data, model, replay_buffer, lr, shared_storage,
             pred_value = pred_value.flatten()
             new_priority = new_priority.flatten()
 
-            summary_writer.add_scalar('{}_statistics/new_priority_mean'.format(tag), new_priority.mean(), step_count)
-            summary_writer.add_scalar('{}_statistics/new_priority_std'.format(tag), new_priority.std(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/new_priority_mean'.format(tag), new_priority.mean(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/new_priority_std'.format(tag), new_priority.std(), step_count)
 
-            summary_writer.add_scalar('{}_statistics/target_reward_mean'.format(tag), target_reward.mean(), step_count)
-            summary_writer.add_scalar('{}_statistics/target_reward_std'.format(tag), target_reward.std(), step_count)
-            summary_writer.add_scalar('{}_statistics/pre_reward_mean'.format(tag), pred_reward.mean(), step_count)
-            summary_writer.add_scalar('{}_statistics/pre_reward_std'.format(tag), pred_reward.std(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/target_reward_mean'.format(tag), target_reward.mean(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/target_reward_std'.format(tag), target_reward.std(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/pre_reward_mean'.format(tag), pred_reward.mean(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/pre_reward_std'.format(tag), pred_reward.std(), step_count)
 
-            summary_writer.add_scalar('{}_statistics/target_value_mean'.format(tag), target_value.mean(), step_count)
-            summary_writer.add_scalar('{}_statistics/target_value_std'.format(tag), target_value.std(), step_count)
-            summary_writer.add_scalar('{}_statistics/pre_value_mean'.format(tag), pred_value.mean(), step_count)
-            summary_writer.add_scalar('{}_statistics/pre_value_std'.format(tag), pred_value.std(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/target_value_mean'.format(tag), target_value.mean(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/target_value_std'.format(tag), target_value.std(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/pre_value_mean'.format(tag), pred_value.mean(), step_count)
+            summary_writer.add_scalar(
+                '{}_statistics/pre_value_std'.format(tag), pred_value.std(), step_count)
 
-            summary_writer.add_histogram('{}_data_dist/new_priority'.format(tag), new_priority, step_count)
-            summary_writer.add_histogram('{}_data_dist/target_reward'.format(tag), target_reward - 1e-5, step_count)
-            summary_writer.add_histogram('{}_data_dist/target_value'.format(tag), target_value - 1e-5, step_count)
+            summary_writer.add_histogram(
+                '{}_data_dist/new_priority'.format(tag), new_priority, step_count)
+            summary_writer.add_histogram(
+                '{}_data_dist/target_reward'.format(tag), target_reward - 1e-5, step_count)
+            summary_writer.add_histogram(
+                '{}_data_dist/target_value'.format(tag), target_value - 1e-5, step_count)
             summary_writer.add_histogram('{}_data_dist/transformed_target_reward'.format(tag), trans_target_reward,
                                          step_count)
             summary_writer.add_histogram('{}_data_dist/transformed_target_value'.format(tag), trans_target_value,
                                          step_count)
-            summary_writer.add_histogram('{}_data_dist/pred_reward'.format(tag), pred_reward - 1e-5, step_count)
-            summary_writer.add_histogram('{}_data_dist/pred_value'.format(tag), pred_value - 1e-5, step_count)
+            summary_writer.add_histogram(
+                '{}_data_dist/pred_reward'.format(tag), pred_reward - 1e-5, step_count)
+            summary_writer.add_histogram(
+                '{}_data_dist/pred_value'.format(tag), pred_value - 1e-5, step_count)
             summary_writer.add_histogram('{}_data_dist/pred_policies'.format(tag), predicted_policies.flatten(),
                                          step_count)
             summary_writer.add_histogram('{}_data_dist/target_policies'.format(tag), target_policies.flatten(),
                                          step_count)
 
-            summary_writer.add_histogram('{}_data_dist/hidden_state'.format(tag), state_lst.flatten(), step_count)
+            summary_writer.add_histogram(
+                '{}_data_dist/hidden_state'.format(tag), state_lst.flatten(), step_count)
 
             for key, val in other_loss.items():
                 if val >= 0:
-                    summary_writer.add_scalar('{}_metric/'.format(tag) + key, val, step_count)
+                    summary_writer.add_scalar(
+                        '{}_metric/'.format(tag) + key, val, step_count)
 
             for key, val in other_log.items():
-                summary_writer.add_scalar('{}_weight/'.format(tag) + key, val, step_count)
+                summary_writer.add_scalar(
+                    '{}_weight/'.format(tag) + key, val, step_count)
 
             for key, val in other_dist.items():
-                summary_writer.add_histogram('{}_dist/'.format(tag) + key, val, step_count)
+                summary_writer.add_histogram(
+                    '{}_dist/'.format(tag) + key, val, step_count)
 
-        summary_writer.add_scalar('{}/total_loss'.format(tag), total_loss, step_count)
+        summary_writer.add_scalar(
+            '{}/total_loss'.format(tag), total_loss, step_count)
         summary_writer.add_scalar('{}/loss'.format(tag), loss, step_count)
-        summary_writer.add_scalar('{}/weighted_loss'.format(tag), weighted_loss, step_count)
-        summary_writer.add_scalar('{}/reg_loss'.format(tag), reg_loss, step_count)
-        summary_writer.add_scalar('{}/policy_loss'.format(tag), policy_loss, step_count)
-        summary_writer.add_scalar('{}/value_loss'.format(tag), value_loss, step_count)
-        summary_writer.add_scalar('{}/reward_loss'.format(tag), reward_loss, step_count)
-        summary_writer.add_scalar('{}/consistency_loss'.format(tag), consistency_loss, step_count)
+        summary_writer.add_scalar(
+            '{}/weighted_loss'.format(tag), weighted_loss, step_count)
+        summary_writer.add_scalar(
+            '{}/reg_loss'.format(tag), reg_loss, step_count)
+        summary_writer.add_scalar(
+            '{}/policy_loss'.format(tag), policy_loss, step_count)
+        summary_writer.add_scalar(
+            '{}/value_loss'.format(tag), value_loss, step_count)
+        summary_writer.add_scalar(
+            '{}/reward_loss'.format(tag), reward_loss, step_count)
+        summary_writer.add_scalar(
+            '{}/consistency_loss'.format(tag), consistency_loss, step_count)
         summary_writer.add_scalar('{}/episodes_collected'.format(tag), replay_episodes_collected,
                                   step_count)
-        summary_writer.add_scalar('{}/replay_buffer_len'.format(tag), replay_buffer_size, step_count)
-        summary_writer.add_scalar('{}/total_node_num'.format(tag), total_num, step_count)
+        summary_writer.add_scalar(
+            '{}/replay_buffer_len'.format(tag), replay_buffer_size, step_count)
+        summary_writer.add_scalar(
+            '{}/total_node_num'.format(tag), total_num, step_count)
         summary_writer.add_scalar('{}/lr'.format(tag), lr, step_count)
 
         if worker_reward is not None:
-            summary_writer.add_scalar('workers/ori_reward', worker_ori_reward, step_count)
-            summary_writer.add_scalar('workers/clip_reward', worker_reward, step_count)
-            summary_writer.add_scalar('workers/clip_reward_max', worker_reward_max, step_count)
-            summary_writer.add_scalar('workers/eps_len', worker_eps_len, step_count)
-            summary_writer.add_scalar('workers/eps_len_max', worker_eps_len_max, step_count)
-            summary_writer.add_scalar('workers/temperature', temperature, step_count)
-            summary_writer.add_scalar('workers/visit_entropy', visit_entropy, step_count)
-            summary_writer.add_scalar('workers/priority_self_play', priority_self_play, step_count)
+            summary_writer.add_scalar(
+                'workers/ori_reward', worker_ori_reward, step_count)
+            summary_writer.add_scalar(
+                'workers/clip_reward', worker_reward, step_count)
+            summary_writer.add_scalar(
+                'workers/clip_reward_max', worker_reward_max, step_count)
+            summary_writer.add_scalar(
+                'workers/eps_len', worker_eps_len, step_count)
+            summary_writer.add_scalar(
+                'workers/eps_len_max', worker_eps_len_max, step_count)
+            summary_writer.add_scalar(
+                'workers/temperature', temperature, step_count)
+            summary_writer.add_scalar(
+                'workers/visit_entropy', visit_entropy, step_count)
+            summary_writer.add_scalar(
+                'workers/priority_self_play', priority_self_play, step_count)
             for key, val in distributions.items():
                 if len(val) == 0:
                     continue
 
                 val = np.array(val).flatten()
-                summary_writer.add_histogram('workers/{}'.format(key), val, step_count)
+                summary_writer.add_histogram(
+                    'workers/{}'.format(key), val, step_count)
 
         if mean_test_score is not None:
-            summary_writer.add_scalar('train/test_score', mean_test_score, step_count)
-            summary_writer.add_scalar('train/test_max_score', max_test_score, step_count)
+            summary_writer.add_scalar(
+                'train/test_score', mean_test_score, step_count)
+            summary_writer.add_scalar(
+                'train/test_max_score', max_test_score, step_count)
 
 
 @ray.remote
@@ -237,10 +278,13 @@ class SharedStorage(object):
             reward = sum(self.reward_log) / len(self.reward_log)
             reward_max = sum(self.reward_max_log) / len(self.reward_max_log)
             eps_lengths = sum(self.eps_lengths) / len(self.eps_lengths)
-            eps_lengths_max = sum(self.eps_lengths_max) / len(self.eps_lengths_max)
+            eps_lengths_max = sum(self.eps_lengths_max) / \
+                len(self.eps_lengths_max)
             temperature = sum(self.temperature_log) / len(self.temperature_log)
-            visit_entropy = sum(self.visit_entropies_log) / len(self.visit_entropies_log)
-            priority_self_play = sum(self.priority_self_play_log) / len(self.priority_self_play_log)
+            visit_entropy = sum(self.visit_entropies_log) / \
+                len(self.visit_entropies_log)
+            priority_self_play = sum(
+                self.priority_self_play_log) / len(self.priority_self_play_log)
             distributions = self.distributions_log
 
             self.ori_reward_log = []
@@ -293,64 +337,40 @@ class DataWorker(object):
         self.last_model_index = -1
 
     def put(self, data):
-        game_histories,_=data
+        game_histories, _ = data
 
         #Jan, 2021
-        #reshape reward -> turn reward
-        prev_r=game_histories.rewards[0]
+        # reshape reward -> turn reward
+        prev_r = game_histories.rewards[0]
         for step_id in range(1, len(game_histories.rewards)):
-            cur_r=game_histories.rewards[step_id]+prev_r
-            prev_r=game_histories.rewards[step_id]
-            game_histories.rewards[step_id]=cur_r
+            cur_r = game_histories.rewards[step_id]+prev_r
+            prev_r = game_histories.rewards[step_id]
+            game_histories.rewards[step_id] = cur_r
 
         self.trajectory_pool.append(data)
 
     def put_last_trajectory(self, i, last_game_histories, last_game_priorities, game_histories):
+        #this is deprecated
         assert False
-        # pad over last block trajectory
-        beg_index = self.config.stacked_observations
-        end_index = beg_index + self.config.num_unroll_steps
-
-        pad_obs_lst = game_histories[i].obs_history[beg_index:end_index]
-        pad_legal_a= game_histories[i].legal_actions[beg_index:end_index]
-        pad_child_visits_lst = game_histories[i].child_visits[beg_index:end_index]
-
-        beg_index = 0
-        end_index = beg_index + self.gap_step - 1
-
-        pad_reward_lst = game_histories[i].rewards[beg_index:end_index]
-
-        beg_index = 0
-        end_index = beg_index + self.gap_step
-
-        pad_root_values_lst = game_histories[i].root_values[beg_index:end_index]
-
-        # pad over and save
-        last_game_histories[i].pad_over(pad_obs_lst, pad_reward_lst, pad_root_values_lst, pad_child_visits_lst, pad_legal_a)
-        last_game_histories[i].game_over()
-
-        self.put((last_game_histories[i], last_game_priorities[i]))
-        self.free()
-
-        # reset last block
-        last_game_histories[i] = None
-        last_game_priorities[i] = None
 
     def len_pool(self):
         return len(self.trajectory_pool)
 
     def free(self):
         if self.len_pool() >= self.pool_size:
-            self.replay_buffer.save_pools.remote(self.trajectory_pool, self.gap_step)
+            self.replay_buffer.save_pools.remote(
+                self.trajectory_pool, self.gap_step)
             del self.trajectory_pool[:]
 
     def get_priorities(self, i, pred_values_lst, search_values_lst):
 
         if self.config.use_priority and not self.config.use_max_priority:
-            # traj_len = len(pred_values_lst[i])
-            pred_values = torch.from_numpy(np.array(pred_values_lst[i])).to(self.device).float()
-            search_values = torch.from_numpy(np.array(search_values_lst[i])).to(self.device).float()
-            priorities = L1Loss(reduction='none')(pred_values, search_values).detach().cpu().numpy() + self.config.prioritized_replay_eps
+            pred_values = torch.from_numpy(
+                np.array(pred_values_lst[i])).to(self.device).float()
+            search_values = torch.from_numpy(
+                np.array(search_values_lst[i])).to(self.device).float()
+            priorities = L1Loss(reduction='none')(pred_values, search_values).detach(
+            ).cpu().numpy() + self.config.prioritized_replay_eps
         else:
             priorities = None
 
@@ -367,7 +387,8 @@ class DataWorker(object):
         model.eval()
 
         start_training = False
-        envs = [self.config.new_game(self.config.seed + self.rank * i) for i in range(env_nums)]
+        envs = [self.config.new_game(
+            self.config.seed + self.rank * i) for i in range(env_nums)]
 
         def _get_max_entropy(action_space):
             p = 1.0 / action_space
@@ -376,27 +397,21 @@ class DataWorker(object):
         max_visit_entropy = _get_max_entropy(self.config.action_space_size)
         # 100k benchmark
         total_transitions = 0
-        #max_transitions = 500 * 1000 // self.config.num_actors
         max_transitions = 500 * 5000 // self.config.num_actors
         with torch.no_grad():
             while True:
-                trained_steps = ray.get(self.shared_storage.get_counter.remote())
+                trained_steps = ray.get(
+                    self.shared_storage.get_counter.remote())
                 if trained_steps >= self.config.training_steps + self.config.last_steps:
                     break
 
-                # init_obses = [env.reset() for env in envs]
-                #@wjc
-                init_obses=[]
-                init_legal_action=[]
+                # @wjc
+                init_obses = []
+                init_legal_action = []
                 for env in envs:
-                    # print(env.reset())
-                    o,a=env.reset()
-
+                    o, a = env.reset()
                     init_obses.append(o)
-                    #print("rest game: init actions=",a,flush=True)
                     init_legal_action.append(a)
-
-                #assert False
 
                 dones = np.array([False for _ in range(env_nums)])
                 game_histories = [GameHistory(envs[_].env.action_space, max_length=self.config.history_length,
@@ -408,16 +423,17 @@ class DataWorker(object):
                 stack_obs_windows = [[] for _ in range(env_nums)]
 
                 for i in range(env_nums):
-                    stack_obs_windows[i] = [init_obses[i] for _ in range(self.config.stacked_observations)]
-                    game_histories[i].init(stack_obs_windows[i],init_legal_action[i])
-                    #print("after init: ",game_histories[i].legal_actions,flush=True)
+                    stack_obs_windows[i] = [init_obses[i]
+                                            for _ in range(self.config.stacked_observations)]
+                    game_histories[i].init(
+                        stack_obs_windows[i], init_legal_action[i])
                 # this the root value of MCTS
                 search_values_lst = [[] for _ in range(env_nums)]
                 # predicted value of target network
                 pred_values_lst = [[] for _ in range(env_nums)]
 
-
-                eps_ori_reward_lst, eps_reward_lst, eps_steps_lst, visit_entropies_lst = np.zeros(env_nums), np.zeros(env_nums), np.zeros(env_nums), np.zeros(env_nums)
+                eps_ori_reward_lst, eps_reward_lst, eps_steps_lst, visit_entropies_lst = np.zeros(
+                    env_nums), np.zeros(env_nums), np.zeros(env_nums), np.zeros(env_nums)
                 step_counter = 0
 
                 _temperature = np.array(
@@ -437,33 +453,23 @@ class DataWorker(object):
                 visit_count_distribution = []
 
                 while not dones.all() and (step_counter <= self.config.max_moves * self.config.self_play_moves_ratio):
-                    # if self_play_episodes %2 ==0:
-                        # print("parallel env={0},in dataworker, played {1} trajectory already".format(env_nums,self_play_episodes),flush=True)
                     if not start_training:
-                        start_training = ray.get(self.shared_storage.get_start_signal.remote())
+                        start_training = ray.get(
+                            self.shared_storage.get_start_signal.remote())
 
                     # get model
-                    trained_steps = ray.get(self.shared_storage.get_counter.remote())
+                    trained_steps = ray.get(
+                        self.shared_storage.get_counter.remote())
                     if trained_steps >= self.config.training_steps + self.config.last_steps:
-                        print("training finished",flush=True)
-                        # training is finished
+                        print("training finished", flush=True)
                         return
-                  #  if start_training and (total_transitions / max_transitions) > (trained_steps / self.config.training_steps):
-                        # self-play is faster or finished
-                        #print("===========> self play is faster,total_tran={0},{1},trained_step={2},{3};{4} > {5}".format(total_transition,max_transition,trained_steps,self.config.training_steps,total_transitions / max_transitions,trained_steps / self.config.training_steps))
-                        #print("=====>self play faster!",flush=True)
-                   #     a=total_transitions / max_transitions
-                    #    b=trained_steps / self.config.training_steps
-                    #    print("self-play={0},train={1}".format(a,b),flush=True)
-                     #   time.sleep(0.3)
-                      #  continue
-                   # print("start training",flush=True)
 
                     new_model_index = trained_steps // self.config.checkpoint_interval
                     if new_model_index > self.last_model_index:
                         self.last_model_index = new_model_index
                         # update model
-                        weights = ray.get(self.shared_storage.get_weights.remote())
+                        weights = ray.get(
+                            self.shared_storage.get_weights.remote())
                         model.set_weights(weights)
                         model.to(self.device)
                         model.eval()
@@ -471,7 +477,8 @@ class DataWorker(object):
                         # log
                         if env_nums > 1:
                             if len(self_play_visit_entropy) > 0:
-                                visit_entropies = np.array(self_play_visit_entropy).mean()
+                                visit_entropies = np.array(
+                                    self_play_visit_entropy).mean()
                                 visit_entropies /= max_visit_entropy
                             else:
                                 visit_entropies = 0.
@@ -496,39 +503,40 @@ class DataWorker(object):
                             self_play_rewards_max = - np.inf
 
                     step_counter += 1
-                    ## reset env if finished
+                    # reset env if finished
                     for i in range(env_nums):
                         if dones[i]:
 
-                            # pad over last block trajectory
-                            if last_game_histories[i] is not None:
-                                assert False
-                                self.put_last_trajectory(i, last_game_histories, last_game_priorities, game_histories)
-
                             # store current block trajectory
-                            priorities = self.get_priorities(i, pred_values_lst, search_values_lst)
+                            priorities = self.get_priorities(
+                                i, pred_values_lst, search_values_lst)
                             game_histories[i].game_over()
 
                             self.put((game_histories[i], priorities))
                             self.free()
 
                             envs[i].close()
-                            #@wjc
+                            # @wjc
                             init_obs, init_legal_actions = envs[i].reset()
                             game_histories[i] = GameHistory(env.env.action_space, max_length=self.config.history_length,
                                                             config=self.config)
                             last_game_histories[i] = None
                             last_game_priorities[i] = None
-                            stack_obs_windows[i] = [init_obs for _ in range(self.config.stacked_observations)]
-                            #@wjc
+                            stack_obs_windows[i] = [init_obs for _ in range(
+                                self.config.stacked_observations)]
+                            # @wjc
                             stack_legal_actions[i] = init_legal_actions
-                            game_histories[i].init(stack_obs_windows[i],stack_legal_actions[i])
+                            game_histories[i].init(
+                                stack_obs_windows[i], stack_legal_actions[i])
 
-                            self_play_rewards_max = max(self_play_rewards_max, eps_reward_lst[i])
-                            self_play_moves_max = max(self_play_moves_max, eps_steps_lst[i])
+                            self_play_rewards_max = max(
+                                self_play_rewards_max, eps_reward_lst[i])
+                            self_play_moves_max = max(
+                                self_play_moves_max, eps_steps_lst[i])
                             self_play_rewards += eps_reward_lst[i]
                             self_play_ori_rewards += eps_ori_reward_lst[i]
-                            self_play_visit_entropy.append(visit_entropies_lst[i] / eps_steps_lst[i])
+                            self_play_visit_entropy.append(
+                                visit_entropies_lst[i] / eps_steps_lst[i])
                             self_play_moves += eps_steps_lst[i]
                             self_play_episodes += 1
 
@@ -540,41 +548,48 @@ class DataWorker(object):
                             eps_ori_reward_lst[i] = 0
                             visit_entropies_lst[i] = 0
 
-                    stack_obs = [game_history.step_obs() for game_history in game_histories]
+                    stack_obs = [game_history.step_obs()
+                                 for game_history in game_histories]
                     if self.config.image_based:
                         stack_obs = prepare_observation_lst(stack_obs)
-                        # stack_obs = torch.from_numpy(stack_obs).to(self.device).float() / 255.0
-                        stack_obs = torch.from_numpy(stack_obs).to(self.device).float()
+                        stack_obs = torch.from_numpy(
+                            stack_obs).to(self.device).float()
                         assert False
                     else:
-                        stack_obs = torch.from_numpy(np.array(stack_obs)).to(self.device).reshape(env_nums, -1)
+                        stack_obs = torch.from_numpy(np.array(stack_obs)).to(
+                            self.device).reshape(env_nums, -1)
 
-                    #@wjc
-                    stack_legal_actions=[game_history.legal_actions[-1] for game_history in game_histories]
-                    #test legal action
-                    #for tt in range(len(game_histories)):
-                        #print("======================================")
-                        #print(game_histories[tt].legal_actions,flush=True)
+                    # @wjc
+                    stack_legal_actions = [
+                        game_history.legal_actions[-1] for game_history in game_histories]
+
                     if self.config.amp_type == 'torch_amp':
                         with autocast():
-                            network_output = model.initial_inference(stack_obs.float())
+                            network_output = model.initial_inference(
+                                stack_obs.float())
                     else:
-                        network_output = model.initial_inference(stack_obs.float())
+                        network_output = model.initial_inference(
+                            stack_obs.float())
                     hidden_state_roots = network_output.hidden_state
                     reward_pool = network_output.reward
                     policy_logits_pool = network_output.policy_logits.tolist()
 
-                    roots = cytree.Roots(env_nums, self.config.action_space_size, self.config.num_simulations)
-                    noises = [np.random.dirichlet([self.config.root_dirichlet_alpha] * self.config.action_space_size).astype(np.float32).tolist() for _ in range(env_nums)]
-                    roots.prepare(self.config.root_exploration_fraction, noises, reward_pool, policy_logits_pool,stack_legal_actions)
+                    roots = cytree.Roots(
+                        env_nums, self.config.action_space_size, self.config.num_simulations)
+                    noises = [np.random.dirichlet([self.config.root_dirichlet_alpha] * self.config.action_space_size).astype(
+                        np.float32).tolist() for _ in range(env_nums)]
+                    roots.prepare(self.config.root_exploration_fraction, noises,
+                                  reward_pool, policy_logits_pool, stack_legal_actions)
 
-                    MCTS(self.config).run_multi(roots, model, hidden_state_roots)
+                    MCTS(self.config).run_multi(
+                        roots, model, hidden_state_roots)
 
                     roots_distributions = roots.get_distributions()
                     roots_values = roots.get_values()
                     for i in range(env_nums):
                         if start_training:
-                            distributions, value, temperature, env = roots_distributions[i], roots_values[i], _temperature[i], envs[i]
+                            distributions, value, temperature, env = roots_distributions[
+                                i], roots_values[i], _temperature[i], envs[i]
 
                             deterministic = False
                             # do greedy action
@@ -583,21 +598,22 @@ class DataWorker(object):
                                     deterministic = True
                         else:
                             value, temperature, env = roots_values[i], _temperature[i], envs[i]
-                            distributions = np.ones(self.config.action_space_size)
+                            distributions = np.ones(
+                                self.config.action_space_size)
                             deterministic = False
-                        # print("before select action: ",len(stack_legal_actions))
-                        action, visit_entropy = select_action(distributions, temperature=temperature, deterministic=deterministic, legal_actions=stack_legal_actions[i])
-                        obs, ori_reward, done, info, legal_action = env.step(action)
-                        #if not np.any(legal_action):
-                        #    print("step:",done,legal_action,flush=True)
-                        #    print("after step, legal a type",type(legal_action))
+                        action, visit_entropy = select_action(
+                            distributions, temperature=temperature, deterministic=deterministic, legal_actions=stack_legal_actions[i])
+                        obs, ori_reward, done, info, legal_action = env.step(
+                            action)
                         if self.config.clip_reward:
                             clip_reward = np.sign(ori_reward)
                         else:
                             clip_reward = ori_reward
 
-                        game_histories[i].store_search_stats(distributions, value)
-                        game_histories[i].append(action, obs, clip_reward, legal_action)
+                        game_histories[i].store_search_stats(
+                            distributions, value)
+                        game_histories[i].append(
+                            action, obs, clip_reward, legal_action)
 
                         eps_reward_lst[i] += clip_reward
                         eps_ori_reward_lst[i] += ori_reward
@@ -609,73 +625,40 @@ class DataWorker(object):
                             total_transitions += 1
 
                         if self.config.use_priority and not self.config.use_max_priority and start_training:
-                            pred_values_lst[i].append(network_output.value[i].item())
+                            pred_values_lst[i].append(
+                                network_output.value[i].item())
                             search_values_lst[i].append(roots_values[i])
-
-                        # fresh stack windows
-                        # print("check type: ",type(stack_obs_windows[0]),len(stack_obs_windows[0]),type(stack_legal_actions[0]),len(stack_legal_actions[0]))
-                        # print("after check: ",len(obs))
-                        # for obss in stack_obs_windows:
-                        #     print(len(obss))
 
                         del stack_obs_windows[i][0]
                         stack_obs_windows[i].append(obs)
-                        #@wjc
-                        #now stack_legal_actions' input is numpy array
-                        # del stack_legal_actions[i][0]
-                        #stack_legal_actions[i].append(legal_action) #seems to be useless
 
-                        # if game history is full
-                        if game_histories[i].is_full():
-                            assert False
-                            # pad over last block trajectory
-                            if last_game_histories[i] is not None:
-                                self.put_last_trajectory(i, last_game_histories, last_game_priorities, game_histories)
-
-                            # calculate priority
-                            priorities = self.get_priorities(i, pred_values_lst, search_values_lst)
-
-                            # save block trajectory
-                            last_game_histories[i] = game_histories[i]
-                            last_game_priorities[i] = priorities
-
-                            # new block trajectory
-                            game_histories[i] = GameHistory(envs[i].env.action_space, max_length=self.config.history_length,
-                                                            config=self.config)
-                            game_histories[i].init(stack_obs_windows[i],stack_legal_actions[i])
-                #print("##########one iter all parallel env done",flush=True)
-                #try:
-                #    print("#########played {0} trajectory already".format(self_play_episodes),flush=True)
-                #except:
-                #    print("########gg",flush=True)
                 for i in range(env_nums):
                     env = envs[i]
                     env.close()
 
                     if dones[i]:
-                        # pad over last block trajectory
-                        if last_game_histories[i] is not None:
-                            assert False
-                            self.put_last_trajectory(i, last_game_histories, last_game_priorities, game_histories)
+
                         # store current block trajectory
-                        priorities = self.get_priorities(i, pred_values_lst, search_values_lst)
+                        priorities = self.get_priorities(
+                            i, pred_values_lst, search_values_lst)
                         game_histories[i].game_over()
 
                         self.put((game_histories[i], priorities))
                         self.free()
 
-                        self_play_rewards_max = max(self_play_rewards_max, eps_reward_lst[i])
-                        self_play_moves_max = max(self_play_moves_max, eps_steps_lst[i])
+                        self_play_rewards_max = max(
+                            self_play_rewards_max, eps_reward_lst[i])
+                        self_play_moves_max = max(
+                            self_play_moves_max, eps_steps_lst[i])
                         self_play_rewards += eps_reward_lst[i]
                         self_play_ori_rewards += eps_ori_reward_lst[i]
-                        self_play_visit_entropy.append(visit_entropies_lst[i] / eps_steps_lst[i])
+                        self_play_visit_entropy.append(
+                            visit_entropies_lst[i] / eps_steps_lst[i])
                         self_play_moves += eps_steps_lst[i]
                         self_play_episodes += 1
                     else:
                         # not save this data
-                        #assert False
                         total_transitions -= len(game_histories[i])
-
 
                 visit_entropies = np.array(self_play_visit_entropy).mean()
                 visit_entropies /= max_visit_entropy
@@ -698,45 +681,41 @@ class DataWorker(object):
                                                                 {'depth': depth_distribution,
                                                                  'visit': visit_count_distribution})
 
-def sanity_check(arr,name):
-    arr=np.array(arr)
-    nan_p=np.isnan(arr)
+
+def sanity_check(arr, name):
+    arr = np.array(arr)
+    nan_p = np.isnan(arr)
 
     if np.any(nan_p):
-        print("{} contains nan".format(name),flush=True)
+        print("{} contains nan".format(name), flush=True)
+
+
 def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_result=False):
-    #total_transitions = ray.get(replay_buffer.get_total_len.remote())
-    total_transitions=0
+    total_transitions = 0
 
     inputs_batch, targets_batch = batch
     obs_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time = inputs_batch
     target_reward, target_value, target_policy = targets_batch
 
-    #================
-    # obs_batch_ori, action_batch, mask_batch, target_reward, target_value, target_policy, indices, weights_lst, make_time = batch
-    #================
-    print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
-    #n=["obs","a","mask","re","val","p","idx","weight_idx","make_time"]
-    #for idx,item in enumerate(batch):
-    #    sanity_check(item,n[idx])
-        #print("in update weights: "+str(n[idx]),item.shape,flush=True)
-
-    # [:, 0: config.stacked_observations * 3,:,:]
     if config.image_based:
-        obs_batch_ori = torch.from_numpy(obs_batch_ori).to(config.device).float() / 255.0
-        obs_batch = obs_batch_ori[:, 0: config.stacked_observations * config.image_channel, :, :]
+        obs_batch_ori = torch.from_numpy(obs_batch_ori).to(
+            config.device).float() / 255.0
+        obs_batch = obs_batch_ori[:,
+                                  0: config.stacked_observations * config.image_channel, :, :]
         obs_target_batch = obs_batch_ori[:, config.image_channel:, :, :]
     else:
-        obs_batch_ori = torch.from_numpy(obs_batch_ori).to(config.device).float()
-        obs_batch = obs_batch_ori[:, 0: config.stacked_observations * config.image_channel, :]
+        obs_batch_ori = torch.from_numpy(
+            obs_batch_ori).to(config.device).float()
+        obs_batch = obs_batch_ori[:,
+                                  0: config.stacked_observations * config.image_channel, :]
         obs_target_batch = obs_batch_ori[:, config.image_channel:, :]
 
     if config.use_augmentation:
-        # TODO: use different augmentation in target observations respectively
         obs_batch = config.transform(obs_batch)
         obs_target_batch = config.transform(obs_target_batch)
 
-    action_batch = torch.from_numpy(action_batch).to(config.device).unsqueeze(-1).long()
+    action_batch = torch.from_numpy(action_batch).to(
+        config.device).unsqueeze(-1).long()
     mask_batch = torch.from_numpy(mask_batch).to(config.device).float()
     target_reward = torch.from_numpy(target_reward).to(config.device).float()
     target_value = torch.from_numpy(target_value).to(config.device).float()
@@ -776,12 +755,10 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
     transformed_target_value = config.scalar_transform(target_value)
     target_value_phi = config.value_phi(transformed_target_value)
-    # print("target: ",target_value.shape,transformed_target_value.shape,target_value_phi.shape,flush=True)
 
     with autocast():
-        print("start learner inference",obs_batch.shape,obs_batch.reshape(batch_size, -1).shape,flush=True)
-        value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
-    #print("====>in train,",type(value),flush=True)
+        value, _, policy_logits, hidden_state = model.initial_inference(
+            obs_batch.reshape(batch_size, -1))
     scaled_value = config.inverse_value_transform(value)
     if vis_result:
         state_lst = hidden_state.detach().cpu().numpy()
@@ -789,15 +766,18 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     predicted_rewards = []
     # Note: Following line is just for logging.
     if vis_result:
-        predicted_values, predicted_policies = scaled_value.detach().cpu(), torch.softmax(policy_logits, dim=1).detach().cpu()
+        predicted_values, predicted_policies = scaled_value.detach(
+        ).cpu(), torch.softmax(policy_logits, dim=1).detach().cpu()
 
     # Reference: Appendix G
-    value_priority = L1Loss(reduction='none')(scaled_value.squeeze(-1), target_value[:, 0])
+    value_priority = L1Loss(reduction='none')(
+        scaled_value.squeeze(-1), target_value[:, 0])
     value_priority = value_priority.data.cpu().numpy() + config.prioritized_replay_eps
     reward_priority = []
 
     value_loss = config.scalar_value_loss(value, target_value_phi[:, 0])
-    policy_loss = -(torch.log_softmax(policy_logits, dim=1) * target_policy[:, 0]).sum(1)
+    policy_loss = -(torch.log_softmax(policy_logits, dim=1)
+                    * target_policy[:, 0]).sum(1)
     reward_loss = torch.zeros(batch_size, device=config.device)
     consistency_loss = torch.zeros(batch_size, device=config.device)
 
@@ -806,59 +786,78 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     gradient_scale = 1 / config.num_unroll_steps
     with autocast():
         for step_i in range(config.num_unroll_steps):
-            value, reward, policy_logits, hidden_state = model.recurrent_inference(hidden_state, action_batch[:, step_i])
+            value, reward, policy_logits, hidden_state = model.recurrent_inference(
+                hidden_state, action_batch[:, step_i])
 
             beg_index = config.image_channel * step_i
-            end_index = config.image_channel * (step_i + config.stacked_observations)
+            end_index = config.image_channel * \
+                (step_i + config.stacked_observations)
 
             if config.consistency_coeff > 0:
-                #will not run here
-                #assert False
-                _, _, _, presentation_state = model.initial_inference(obs_target_batch[:, beg_index:end_index, :].reshape(batch_size, -1))
+                # will not run here
+                _, _, _, presentation_state = model.initial_inference(
+                    obs_target_batch[:, beg_index:end_index, :].reshape(batch_size, -1))
                 if config.consist_type is 'contrastive':
-                    temp_loss = model.contrastive_loss(hidden_state, presentation_state) * mask_batch[:, step_i]
+                    temp_loss = model.contrastive_loss(
+                        hidden_state, presentation_state) * mask_batch[:, step_i]
                 else:
                     dynamic_proj = model.project(hidden_state, with_grad=True)
-                    observation_proj = model.project(presentation_state, with_grad=False)
-                    temp_loss = consist_loss_func(dynamic_proj, observation_proj) * mask_batch[:, step_i]
+                    observation_proj = model.project(
+                        presentation_state, with_grad=False)
+                    temp_loss = consist_loss_func(
+                        dynamic_proj, observation_proj) * mask_batch[:, step_i]
 
-                other_loss['consist_' + str(step_i + 1)] = temp_loss.mean().item()
+                other_loss['consist_' +
+                           str(step_i + 1)] = temp_loss.mean().item()
                 consistency_loss += temp_loss
 
-            policy_loss += -(torch.log_softmax(policy_logits, dim=1) * target_policy[:, step_i + 1]).sum(1)
-            value_loss += config.scalar_value_loss(value, target_value_phi[:, step_i + 1])
-            #print("==================>",reward_loss.shape,reward.shape, target_reward_phi[:, step_i].shape,flush=True)
-            reward_loss += config.scalar_reward_loss(reward, target_reward_phi[:, step_i])
+            policy_loss += -(torch.log_softmax(policy_logits, dim=1)
+                             * target_policy[:, step_i + 1]).sum(1)
+            value_loss += config.scalar_value_loss(
+                value, target_value_phi[:, step_i + 1])
+            reward_loss += config.scalar_reward_loss(
+                reward, target_reward_phi[:, step_i])
             hidden_state.register_hook(lambda grad: grad * 0.5)
 
             scaled_rewards = config.inverse_reward_transform(reward.detach())
 
-            l1_prior = torch.nn.L1Loss(reduction='none')(scaled_rewards.squeeze(-1), target_reward[:, step_i])
+            l1_prior = torch.nn.L1Loss(reduction='none')(
+                scaled_rewards.squeeze(-1), target_reward[:, step_i])
             reward_priority.append(l1_prior.detach().cpu().numpy())
             if vis_result:
                 scaled_rewards_cpu = scaled_rewards.detach().cpu()
 
-                predicted_values = torch.cat((predicted_values, config.inverse_value_transform(value).detach().cpu()))
-                # scaled_rewards = config.inverse_reward_transform(reward)
+                predicted_values = torch.cat(
+                    (predicted_values, config.inverse_value_transform(value).detach().cpu()))
                 predicted_rewards.append(scaled_rewards_cpu)
-                predicted_policies = torch.cat((predicted_policies, torch.softmax(policy_logits, dim=1).detach().cpu()))
-                state_lst = np.concatenate((state_lst, hidden_state.detach().cpu().numpy()))
+                predicted_policies = torch.cat(
+                    (predicted_policies, torch.softmax(policy_logits, dim=1).detach().cpu()))
+                state_lst = np.concatenate(
+                    (state_lst, hidden_state.detach().cpu().numpy()))
 
                 key = 'unroll_' + str(step_i + 1) + '_l1'
 
-                reward_indices_0 = (target_reward_cpu[:, step_i].unsqueeze(-1) == 0)
-                reward_indices_n1 = (target_reward_cpu[:, step_i].unsqueeze(-1) == -1)
-                reward_indices_1 = (target_reward_cpu[:, step_i].unsqueeze(-1) == 1)
+                reward_indices_0 = (
+                    target_reward_cpu[:, step_i].unsqueeze(-1) == 0)
+                reward_indices_n1 = (
+                    target_reward_cpu[:, step_i].unsqueeze(-1) == -1)
+                reward_indices_1 = (
+                    target_reward_cpu[:, step_i].unsqueeze(-1) == 1)
 
-                target_reward_base = target_reward_cpu[:, step_i].reshape(-1).unsqueeze(-1)
+                target_reward_base = target_reward_cpu[:,
+                                                       step_i].reshape(-1).unsqueeze(-1)
 
-                other_loss[key] = metric_loss(scaled_rewards_cpu, target_reward_base)
+                other_loss[key] = metric_loss(
+                    scaled_rewards_cpu, target_reward_base)
                 if reward_indices_1.any():
-                    other_loss[key + '_1'] = metric_loss(scaled_rewards_cpu[reward_indices_1], target_reward_base[reward_indices_1])
+                    other_loss[key + '_1'] = metric_loss(
+                        scaled_rewards_cpu[reward_indices_1], target_reward_base[reward_indices_1])
                 if reward_indices_n1.any():
-                    other_loss[key + '_-1'] = metric_loss(scaled_rewards_cpu[reward_indices_n1], target_reward_base[reward_indices_n1])
+                    other_loss[key + '_-1'] = metric_loss(
+                        scaled_rewards_cpu[reward_indices_n1], target_reward_base[reward_indices_n1])
                 if reward_indices_0.any():
-                    other_loss[key + '_0'] = metric_loss(scaled_rewards_cpu[reward_indices_0], target_reward_base[reward_indices_0])
+                    other_loss[key + '_0'] = metric_loss(
+                        scaled_rewards_cpu[reward_indices_0], target_reward_base[reward_indices_0])
 
                 if final_indices.any():
                     # last 5% data
@@ -868,23 +867,30 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
                     scaled_rewards_cpu_test = scaled_rewards_cpu[final_indices]
                     target_reward_base_test = target_reward_base[final_indices]
 
-                    reward_indices_0 = (target_reward_cpu_test[:, step_i].unsqueeze(-1) == 0)
-                    reward_indices_n1 = (target_reward_cpu_test[:, step_i].unsqueeze(-1) == -1)
-                    reward_indices_1 = (target_reward_cpu_test[:, step_i].unsqueeze(-1) == 1)
+                    reward_indices_0 = (
+                        target_reward_cpu_test[:, step_i].unsqueeze(-1) == 0)
+                    reward_indices_n1 = (
+                        target_reward_cpu_test[:, step_i].unsqueeze(-1) == -1)
+                    reward_indices_1 = (
+                        target_reward_cpu_test[:, step_i].unsqueeze(-1) == 1)
 
                     if reward_indices_1.any():
-                        other_loss[key + '_1'] = metric_loss(scaled_rewards_cpu_test[reward_indices_1], target_reward_base_test[reward_indices_1])
+                        other_loss[key + '_1'] = metric_loss(
+                            scaled_rewards_cpu_test[reward_indices_1], target_reward_base_test[reward_indices_1])
                     if reward_indices_n1.any():
-                        other_loss[key + '_-1'] = metric_loss(scaled_rewards_cpu_test[reward_indices_n1], target_reward_base_test[reward_indices_n1])
+                        other_loss[key + '_-1'] = metric_loss(
+                            scaled_rewards_cpu_test[reward_indices_n1], target_reward_base_test[reward_indices_n1])
                     if reward_indices_0.any():
-                        other_loss[key + '_0'] = metric_loss(scaled_rewards_cpu_test[reward_indices_0], target_reward_base_test[reward_indices_0])
+                        other_loss[key + '_0'] = metric_loss(
+                            scaled_rewards_cpu_test[reward_indices_0], target_reward_base_test[reward_indices_0])
 
     # ----------------------------------------------------------------------------------
     # optimize
-    loss = (config.consistency_coeff * consistency_loss + config.policy_loss_coeff * policy_loss + config.value_loss_coeff * value_loss + config.reward_loss_coeff * reward_loss)
+    loss = (config.consistency_coeff * consistency_loss + config.policy_loss_coeff *
+            policy_loss + config.value_loss_coeff * value_loss + config.reward_loss_coeff * reward_loss)
 
-    #loss = ( config.policy_loss_coeff * policy_loss +
-     #       config.value_loss_coeff * value_loss + config.reward_loss_coeff * reward_loss)
+    # loss = ( config.policy_loss_coeff * policy_loss +
+    #       config.value_loss_coeff * value_loss + config.reward_loss_coeff * reward_loss)
     weighted_loss = (weights * loss).mean()
 
     # L2 reg
@@ -914,10 +920,11 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
         scaler.update()
     else:
         optimizer.step()
-    # ----------------------------------------------------------------------------------
+
     # update priority
     reward_priority = np.mean(reward_priority, 0)
-    new_priority = (1 - config.priority_reward_ratio) * value_priority + config.priority_reward_ratio * reward_priority
+    new_priority = (1 - config.priority_reward_ratio) * \
+        value_priority + config.priority_reward_ratio * reward_priority
     replay_buffer.update_priorities.remote(indices, new_priority, make_time)
 
     # packing data for logging
@@ -931,47 +938,66 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
         other_log['reward_weight'] = reward_mean
 
         # reward l1 loss
-        reward_indices_0 = (target_reward_cpu[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == 0)
-        reward_indices_n1 = (target_reward_cpu[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == -1)
-        reward_indices_1 = (target_reward_cpu[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == 1)
+        reward_indices_0 = (
+            target_reward_cpu[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == 0)
+        reward_indices_n1 = (
+            target_reward_cpu[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == -1)
+        reward_indices_1 = (
+            target_reward_cpu[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == 1)
 
-        target_reward_base = target_reward_cpu[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1)
+        target_reward_base = target_reward_cpu[:,
+                                               :config.num_unroll_steps].reshape(-1).unsqueeze(-1)
 
-        predicted_rewards = torch.stack(predicted_rewards).transpose(1, 0).squeeze(-1)
+        predicted_rewards = torch.stack(
+            predicted_rewards).transpose(1, 0).squeeze(-1)
         if final_indices.any():
-            predicted_rewards_test = predicted_rewards[final_indices].reshape(-1).unsqueeze(-1)
+            predicted_rewards_test = predicted_rewards[final_indices].reshape(
+                -1).unsqueeze(-1)
         predicted_rewards = predicted_rewards.reshape(-1).unsqueeze(-1)
         other_loss['l1'] = metric_loss(predicted_rewards, target_reward_base)
         if reward_indices_1.any():
-            other_loss['l1_1'] = metric_loss(predicted_rewards[reward_indices_1], target_reward_base[reward_indices_1])
+            other_loss['l1_1'] = metric_loss(
+                predicted_rewards[reward_indices_1], target_reward_base[reward_indices_1])
         if reward_indices_n1.any():
-            other_loss['l1_-1'] = metric_loss(predicted_rewards[reward_indices_n1], target_reward_base[reward_indices_n1])
+            other_loss['l1_-1'] = metric_loss(
+                predicted_rewards[reward_indices_n1], target_reward_base[reward_indices_n1])
         if reward_indices_0.any():
-            other_loss['l1_0'] = metric_loss(predicted_rewards[reward_indices_0], target_reward_base[reward_indices_0])
+            other_loss['l1_0'] = metric_loss(
+                predicted_rewards[reward_indices_0], target_reward_base[reward_indices_0])
 
         if final_indices.any():
             # last 5% data
             target_reward_cpu_test = target_reward_cpu[final_indices]
-            target_reward_base_test = target_reward_cpu[final_indices, :config.num_unroll_steps].reshape(-1).unsqueeze(-1)
+            target_reward_base_test = target_reward_cpu[final_indices,
+                                                        :config.num_unroll_steps].reshape(-1).unsqueeze(-1)
 
-            reward_indices_0 = (target_reward_cpu_test[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == 0)
-            reward_indices_n1 = (target_reward_cpu_test[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == -1)
-            reward_indices_1 = (target_reward_cpu_test[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == 1)
+            reward_indices_0 = (
+                target_reward_cpu_test[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == 0)
+            reward_indices_n1 = (
+                target_reward_cpu_test[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == -1)
+            reward_indices_1 = (
+                target_reward_cpu_test[:, :config.num_unroll_steps].reshape(-1).unsqueeze(-1) == 1)
 
-            other_loss['5%_l1'] = metric_loss(predicted_rewards_test, target_reward_base_test)
+            other_loss['5%_l1'] = metric_loss(
+                predicted_rewards_test, target_reward_base_test)
             if reward_indices_1.any():
-                other_loss['5%_l1_1'] = metric_loss(predicted_rewards_test[reward_indices_1], target_reward_base_test[reward_indices_1])
+                other_loss['5%_l1_1'] = metric_loss(
+                    predicted_rewards_test[reward_indices_1], target_reward_base_test[reward_indices_1])
             if reward_indices_n1.any():
-                other_loss['5%_l1_-1'] = metric_loss(predicted_rewards_test[reward_indices_n1], target_reward_base_test[reward_indices_n1])
+                other_loss['5%_l1_-1'] = metric_loss(
+                    predicted_rewards_test[reward_indices_n1], target_reward_base_test[reward_indices_n1])
             if reward_indices_0.any():
-                other_loss['5%_l1_0'] = metric_loss(predicted_rewards_test[reward_indices_0], target_reward_base_test[reward_indices_0])
+                other_loss['5%_l1_0'] = metric_loss(
+                    predicted_rewards_test[reward_indices_0], target_reward_base_test[reward_indices_0])
 
         td_data = (new_priority, target_reward.detach().cpu().numpy(), target_value.detach().cpu().numpy(),
-                   transformed_target_reward.detach().cpu().numpy(), transformed_target_value.detach().cpu().numpy(),
-                   target_reward_phi.detach().cpu().numpy(), target_value_phi.detach().cpu().numpy(),
-                   predicted_rewards.detach().cpu().numpy(), predicted_values.detach().cpu().numpy(),
-                   target_policy.detach().cpu().numpy(), predicted_policies.detach().cpu().numpy(), state_lst,
-                   other_loss, other_log, other_dist)
+                   transformed_target_reward.detach().cpu().numpy(
+        ), transformed_target_value.detach().cpu().numpy(),
+            target_reward_phi.detach().cpu().numpy(), target_value_phi.detach().cpu().numpy(),
+            predicted_rewards.detach().cpu().numpy(), predicted_values.detach().cpu().numpy(),
+            target_policy.detach().cpu().numpy(
+        ), predicted_policies.detach().cpu().numpy(), state_lst,
+            other_loss, other_log, other_dist)
         priority_data = (weights, indices)
     else:
         td_data, priority_data = _, _
@@ -996,11 +1022,13 @@ def adjust_lr(config, optimizer, step_count, scheduler):
             lr = optimizer.param_groups[0]['lr']
         else:
 
-            tmp_lr = config.lr_init * config.lr_decay_rate ** ((step_count - config.lr_warm_step) // config.lr_decay_steps)
-            if tmp_lr >= 0.001:
-                lr=tmp_lr
+            tmp_lr = config.lr_init * \
+                config.lr_decay_rate ** ((step_count -
+                                         config.lr_warm_step) // config.lr_decay_steps)
+            if tmp_lr >= 0.0001:
+                lr = tmp_lr
             else:
-                lr=0.001
+                lr = 0.0001
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
 
@@ -1008,16 +1036,15 @@ def adjust_lr(config, optimizer, step_count, scheduler):
 
 
 def add_batch(batch, m_batch):
-    # obs_batch, action_batch, reward_batch, value_batch, policy_batch, indices_lst, weights_lst, make_time
     for i, m_bt in enumerate(m_batch):
         batch[i].append(m_bt)
 
 
 class BatchStorage(object):
-    def __init__(self, threshold=15, size=20,name=''):#8,16
+    def __init__(self, threshold=15, size=20, name=''):  # 8,16
         self.threshold = threshold
         self.batch_queue = Queue(maxsize=size)
-        self.name=name
+        self.name = name
 
     def push(self, batch):
         if self.batch_queue.qsize() <= self.threshold:
@@ -1034,181 +1061,16 @@ class BatchStorage(object):
 
     def get_len(self):
         return self.batch_queue.qsize()
+
     def is_full(self):
-        if self.get_len()>=self.threshold:
-            print("full",flush=True)
+        if self.get_len() >= self.threshold:
+            print("full", flush=True)
             return True
         else:
             return False
 
-@ray.remote(num_gpus=gpu_num,num_cpus=1)
-class BatchWorker(object):
-    def __init__(self, worker_id, replay_buffer, storage, batch_storage, config):
-        self.worker_id = worker_id
-        self.replay_buffer = replay_buffer
-        self.storage = storage
-        self.batch_storage = batch_storage
-        self.config = config
 
-        if config.amp_type == 'nvidia_apex':
-            self.target_model = amp.initialize(config.get_uniform_network().to(self.config.device))
-        else:
-            self.target_model = config.get_uniform_network()
-            self.target_model.to('cuda')
-        self.target_model.eval()
-
-        self.last_model_index = -1
-        self.batch_max_num = 40#from 20
-        self.beta_schedule = LinearSchedule(config.training_steps + config.last_steps, initial_p=config.priority_prob_beta, final_p=1.0)
-
-    def run(self):
-        start = False
-        # print("batch worker initialize",flush=True)
-        while True:
-            # wait for starting
-            if not start:
-                start = ray.get(self.storage.get_start_signal.remote())
-                time.sleep(1)
-                # print("batch worker waiting replay_buffer.get_total_len.remote()) >= config.start_window_size",flush=True)
-
-                continue
-            # TODO: use latest weights for policy reanalyze
-            ray_data_lst = [self.storage.get_counter.remote(), self.storage.get_target_weights.remote()]
-            trained_steps, target_weights = ray.get(ray_data_lst)
-
-            beta = self.beta_schedule.value(trained_steps)
-            batch_context = ray.get(self.replay_buffer.prepare_batch_context.remote(self.config.batch_size, beta))
-
-            #@wjc
-            game_lst, game_pos_lst, _, _, _=batch_context
-            #temporarily save the obs list
-
-            if trained_steps >= self.config.training_steps + self.config.last_steps:
-                # print("batchworker finished working",flush=True)
-                break
-
-            new_model_index = trained_steps // self.config.target_model_interval
-            if new_model_index > self.last_model_index:
-                self.last_model_index = new_model_index
-            else:
-                target_weights = None
-
-            if self.batch_storage.get_len() < self.batch_max_num:
-                #should be zero as no batch is pushed
-                # print("batch storage size={0}/20 ".format(self.batch_storage.get_len()),flush=True)
-                try:
-                    batch = self.make_batch(batch_context, self.config.revisit_policy_search_rate, weights=target_weights, batch_num=2)
-                    # print("batch worker finish makeing batch, start to push",flush=True)
-                    #if self.batch_storage.is_full():
-                     #   print("{} is sleeping, buffer={}".format(self.worker_id,self.batch_storage.get_len()),flush=True)
-                    self.batch_storage.push(batch)
-                except:
-                    print('=====================>Data is deleted...')
-                    #assert False
-
-    def split_context(self, batch_context, split_num):#game_lst, game_pos_lst, indices_lst, weights_lst, make_time_lst = batch_context
-        batch_context_lst = []
-
-        context_num = len(batch_context)
-        batch_size = len(batch_context[0])
-        split_size = batch_size // split_num
-
-        assert split_size * split_num == batch_size
-
-        for i in range(split_num):
-            beg_index = split_size * i
-            end_index = split_size * (i + 1)
-
-            _context = []
-            for j in range(context_num):
-                _context.append(batch_context[j][beg_index:end_index])
-
-            batch_context_lst.append(_context)
-
-        return batch_context_lst
-
-    def concat_batch(self, batch_lst):
-        batch = [[] for _ in range(8 + 1)]
-
-        for i in range(len(batch_lst)):
-            for j in range(len(batch_lst[0])):
-                if i == 0:
-                    batch[j] = batch_lst[i][j]
-                else:
-                    batch[j] = np.concatenate((batch[j], batch_lst[i][j]), axis=0)
-        return batch
-
-    def make_batch(self, batch_context, ratio, weights=None, batch_num=2):
-        batch_context_lst = self.split_context(batch_context, batch_num)#game_lst, game_pos_lst, indices_lst, weights_lst, make_time_lst = batch_context
-        batch_lst = []
-        for i in range(len(batch_context_lst)):
-
-            batch_lst.append(self._make_batch(batch_context_lst[i], ratio, weights))
-        return self.concat_batch(batch_lst)
-
-    def _make_batch(self, batch_context, ratio, weights=None):
-        if weights is not None:
-            self.target_model.set_weights(weights)
-            self.target_model.to('cuda')
-            self.target_model.eval()
-            # print('weight is not none! change weights!',flush=True)
-        game_lst, game_pos_lst, indices_lst, weights_lst, make_time_lst = batch_context
-        batch_size = len(indices_lst)
-        obs_lst, action_lst, mask_lst = [], [], []
-        for i in range(batch_size):
-            game = game_lst[i]
-            game_pos = game_pos_lst[i]
-            _actions = game.actions[game_pos:game_pos + self.config.num_unroll_steps].tolist()
-            _mask = [1. for i in range(len(_actions))]
-            _mask += [0. for _ in range(self.config.num_unroll_steps - len(_mask))]
-            _actions += [np.random.randint(0, game.action_space_size) for _ in range(self.config.num_unroll_steps - len(_actions))]
-
-            obs_lst.append(game_lst[i].obs(game_pos_lst[i], extra_len=self.config.num_unroll_steps, padding=True))#<===== problem
-
-            action_lst.append(_actions)
-            mask_lst.append(_mask)
-        re_num = int(batch_size * ratio)#ratio is config.revisit_policy_search_rate
-        obs_lst = prepare_observation_lst(obs_lst, image_based=self.config.image_based)
-        batch = [obs_lst, action_lst, mask_lst, [], [], [], indices_lst, weights_lst, make_time_lst]
-        if self.config.reanalyze_part == 'paper':
-            re_value, re_reward, re_policy = prepare_multi_target(self.replay_buffer, indices_lst[:re_num],
-                                                                  make_time_lst[:re_num],
-                                                                  game_lst[:re_num], game_pos_lst[:re_num],
-                                                                  self.config, self.target_model)
-            batch[3].append(re_reward)
-            batch[4].append(re_value)
-            batch[5].append(re_policy)
-            # only value
-            if re_num < batch_size:
-                re_value, re_reward, re_policy = prepare_multi_target_only_value(game_lst[re_num:], game_pos_lst[re_num:],
-                                                                                 self.config, self.target_model)
-                batch[3].append(re_reward)
-                batch[4].append(re_value)
-                batch[5].append(re_policy)
-        elif self.config.reanalyze_part == 'none':
-            re_value, re_reward, re_policy = prepare_multi_target_none(game_lst[:], game_pos_lst[:],
-                                                                                 self.config, self.target_model)
-            batch[3].append(re_reward)
-            batch[4].append(re_value)
-            batch[5].append(re_policy)
-        else:
-            assert self.config.reanalyze_part == 'all'
-            re_value, re_reward, re_policy = prepare_multi_target(self.replay_buffer, indices_lst, make_time_lst,
-                                                                  game_lst, game_pos_lst, self.config,
-                                                                  self.target_model)
-            batch[3].append(re_reward)
-            batch[4].append(re_value)
-            batch[5].append(re_policy)
-        for i in range(len(batch)):
-            if i in range(3, 6):
-                batch[i] = np.concatenate(batch[i])
-            else:
-                batch[i] = np.asarray(batch[i])
-
-        return batch
-
-
-def _train(model, target_model, latest_model, config, shared_storage, replay_buffer, batch_storage, summary_writer):
+def _train(model, target_model, latest_model, config, shared_storage, replay_buffer, batch_storage, summary_writer, snapshot):
 
     # ----------------------------------------------------------------------------------
     model = model.to(config.device)
@@ -1218,13 +1080,21 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     target_model.eval()
     latest_model.eval()
 
-    optimizer = optim.SGD(model.parameters(), lr=config.lr_init, momentum=config.momentum,
-                          weight_decay=config.weight_decay)
+    print("using optimizer ={}".format(config.optim), flush=True)
+    if config.optim == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=config.lr_init, momentum=config.momentum,
+                              weight_decay=config.weight_decay)
+    elif config.optim == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=config.lr_init, eps=1e-5)
+    else:
+        assert config.optim == 'rmsprop'
+        optimizer = optim.RMSprop(model.parameters(), lr=config.lr_init, momentum=config.momentum,
+                                  weight_decay=config.weight_decay)
 
     if config.amp_type == 'nvidia_apex':
-        model, optimizer = amp.initialize(model, optimizer, opt_level=config.opt_level)
+        model, optimizer = amp.initialize(
+            model, optimizer, opt_level=config.opt_level)
     scaler = GradScaler()
-    # ----------------------------------------------------------------------------------
 
     if config.lr_type is 'cosine':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
@@ -1235,54 +1105,55 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     if config.use_augmentation:
         config.set_transforms()
 
-    # wait for all replay buffer to be non-empty
-    last=0
-    mv=3
+    last = 0
+    mv = 3
     while not (ray.get(replay_buffer.get_total_len.remote()) >= config.start_window_size):
-        cur=ray.get(replay_buffer.get_total_len.remote())
-        print("waiting in _train,buffer size ={} /{}, speed={:.1f}".format(cur,config.start_window_size,(cur-last)/mv),flush=True)
-        last=cur
+        cur = ray.get(replay_buffer.get_total_len.remote())
+        print("waiting in _train,buffer size ={} /{}, speed={:.1f}".format(cur,
+              config.start_window_size, (cur-last)/mv), flush=True)
+        last = cur
         time.sleep(mv)
         pass
+
     print('in _train, Begin training...')
     shared_storage.set_start_signal.remote()
 
     step_count = 0
-    batch_count = 0
-    make_time = 0.
+
     lr = 0.
 
     recent_weights = model.get_weights()
-    time_100k=time.time()
-    _interval=config.debug_interval
-    _debug_batch=config.debug_batch
+    time_100k = time.time()
+    _interval = config.debug_interval
     while step_count < config.training_steps + config.last_steps:
 
         # @profile
-        # def f(batch_count, step_count, lr, make_time):
-        if step_count % 200 == 0:#@wjc changed to 100 for debugging
+        if step_count % 200 == 0:
             replay_buffer.remove_to_fit.remote()
 
+        if step_count in snapshot:
+            print("replay buffer start")
+            op_dir = os.path.join(config.exp_path, 'replay', str(step_count))
+            if not os.path.exists(op_dir):
+                os.makedirs(op_dir)
+            replay_buffer.save_files.remote(id=step_count)
+            op_dir = os.path.join(config.exp_path, 'replay', str(step_count))
+            print(op_dir, os.path.exists(op_dir))
+            print(os.path.join(op_dir, 'op.pt'))
+            torch.save(optimizer.state_dict(), os.path.join(op_dir, 'op.pt'))
+            print("replay buffer finish")
+
         batch = batch_storage.pop()
-        # before_btch=time.time()
         if batch is None:
-            time.sleep(0.5)#0.3->2
-            # if _debug_batch:
-            # print("LEARNER WAITING!",flush=True)
+            time.sleep(0.5)
+            # print("LEARNER WAITING!", flush=True)
             continue
-        # print("making one batch takes: ", time.time()-before_btch,flush=True)
         shared_storage.incr_counter.remote()
         lr = adjust_lr(config, optimizer, step_count, scheduler)
 
         if step_count % config.checkpoint_interval == 0:
             shared_storage.set_weights.remote(model.get_weights())
 
-        # if config.target_moving_average:
-        #     tau = 1 / config.target_model_interval
-        #     soft_update(target_model, model, tau=tau)
-        #     target_model.eval()
-        #     shared_storage.set_target_weights.remote(target_model.get_weights())
-        # else:
         if step_count % config.target_model_interval == 0:
             shared_storage.set_target_weights.remote(recent_weights)
             recent_weights = model.get_weights()
@@ -1299,33 +1170,36 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         if config.amp_type == 'torch_amp':
             if step_count >= 1:
                 scaler = scaler_prev
-            log_data = update_weights(model, batch, optimizer, replay_buffer, config, scaler, True)
+            log_data = update_weights(
+                model, batch, optimizer, replay_buffer, config, scaler, True)
             scaler_prev = log_data[3]
         else:
-            log_data = update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_result)
+            log_data = update_weights(
+                model, batch, optimizer, replay_buffer, config, scaler, vis_result)
 
         if step_count % config.log_interval == 0:
-            _log(config, step_count, log_data[0:3], model, replay_buffer, lr, shared_storage, summary_writer, vis_result)
+            _log(config, step_count, log_data[0:3], model, replay_buffer,
+                 lr, shared_storage, summary_writer, vis_result)
 
         step_count += 1
-     #   if config.debug_batch:
-    #        _interval=config.debug_interval
 
-        if step_count%_interval==0:
+        if step_count % _interval == 0:
 
-            _time=time.time()-time_100k
-            print("===>step={} ;cost [{:.2f}] s/{}steps; <==>[{:.2f}] s/1klr".format(step_count,_time,_interval,_time/(_interval/1000)),flush=True)
-            time_100k=time.time()
+            _time = time.time()-time_100k
+            print("===>step={} ;cost [{:.2f}] s/{}steps; <==>[{:.2f}] s/1klr".format(
+                step_count, _time, _interval, _time/(_interval/1000)), flush=True)
+            time_100k = time.time()
 
         if step_count % config.save_ckpt_interval == 0:
-            model_path = os.path.join(config.model_dir, 'model_{}.p'.format(step_count))
+            model_path = os.path.join(
+                config.model_dir, 'model_{}.p'.format(step_count))
             torch.save(model.state_dict(), model_path)
 
     shared_storage.set_weights.remote(model.get_weights())
     return model.get_weights()
 
 
-@ray.remote(num_gpus=gpu_num)#@wjc, changed to 0.25
+@ray.remote(num_gpus=gpu_num)
 def _test(config, shared_storage):
     test_model = config.get_uniform_network()
     best_test_score = float('-inf')
@@ -1336,29 +1210,28 @@ def _test(config, shared_storage):
             break
         if counter >= config.test_interval * episodes:
             episodes += 1
-            test_model.set_weights(ray.get(shared_storage.get_weights.remote()))
+            test_model.set_weights(
+                ray.get(shared_storage.get_weights.remote()))
             test_model.eval()
 
-            test_score, _ = test(config, test_model, counter, config.test_episodes, 'cuda', False, save_video=False)
+            test_score, _ = test(config, test_model, counter,
+                                 config.test_episodes, 'cuda', False, save_video=False)
             mean_score = sum(test_score) / len(test_score)
             if mean_score >= best_test_score:
                 best_test_score = mean_score
                 torch.save(test_model.state_dict(), config.model_path)
 
             shared_storage.add_test_log.remote(test_score)
-        #print("============================>Sleeping Test!")
         time.sleep(180)
-        #print("============================>Waking up Test!")
-
 
 
 def train(config, summary_writer=None, model_path=None):
     model = config.get_uniform_network()
     target_model = config.get_uniform_network()
     latest_model = config.get_uniform_network()
-    #assert model_path is not None
+
     if model_path:
-        print('>>>>>>>>>>>>>>>>resume model from path: ', model_path,flush=True)
+        print('resume model from path: ', model_path, flush=True)
         weights = torch.load(model_path)
 
         model.load_state_dict(weights)
@@ -1367,161 +1240,39 @@ def train(config, summary_writer=None, model_path=None):
 
     storage = SharedStorage.remote(model, target_model, latest_model)
 
-    batch_storage = BatchStorage(20, 30,'batch')
-    mcts_storage = BatchStorage(20, 30,'mcts')
+    batch_storage = BatchStorage(20, 30, 'batch')
+    mcts_storage = BatchStorage(20, 30, 'mcts')
 
     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
 
-    workers=[]
+    if config.load_snapshot != 'none':
+        replay_buffer.load_files.remote(config.load_snapshot)
+        print("finish loading replay buffer at {}".format(config.load_snapshot),flush=True)
+
+    time.sleep(5)
+
+    workers = []
     # reanalyze workers
-    cpu_workers = [BatchWorker_CPU.remote(idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.cpu_actor)]
+    cpu_workers = [BatchWorker_CPU.remote(
+        idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.cpu_actor)]
     workers += [cpu_worker.run.remote() for cpu_worker in cpu_workers]
-    gpu_workers = [BatchWorker_GPU.remote(idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.gpu_actor)]
+    gpu_workers = [BatchWorker_GPU.remote(
+        idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.gpu_actor)]
     workers += [gpu_worker.run.remote() for gpu_worker in gpu_workers]
 
-
-    # self-play
-    #num_actors=2
-    data_workers = [DataWorker.remote(rank, config, storage, replay_buffer) for rank in range(config.num_actors)] #changed to 1 actor
+    data_workers = [DataWorker.remote(rank, config, storage, replay_buffer) for rank in range(
+        config.num_actors)]
     workers += [worker.run_multi.remote() for worker in data_workers]
-    # ray.get(replay_buffer.random_init_trajectory.remote(200))
 
-    # batch maker
-    # workers += [batch_worker.run.remote() for batch_worker in batch_workers]
-    # time.sleep(5)
-    # storage.set_start_signal.remote()
-    # for batch_worker in batch_workers:
-        # print("launch batch")
-        # batch_worker.run()
-    # while True:
-        # print("batch storage size ",(batch_storage.get_len()),flush=True)
-        # time.sleep(2)
-    # test
     workers += [_test.remote(config, storage)]
     # train
-    final_weights = _train(model, target_model, latest_model, config, storage, replay_buffer, batch_storage, summary_writer)
+    snapshot_idx=[]
+    if config.save_snapshot!=0:
+        snapshot_idx=[config.save_snapshot]
+
+    final_weights = _train(model, target_model, latest_model, config, storage,
+                           replay_buffer, batch_storage, summary_writer, snapshot_idx)
     # wait all
     ray.wait(workers)
 
     return model, final_weights
-
-
-#old version of train
-#=============================================================================
-# def train(config, summary_writer=None, model_path=None):
-#     model = config.get_uniform_network()
-#     target_model = config.get_uniform_network()
-#     latest_model = config.get_uniform_network()
-#     #assert model_path is not None
-#     if model_path:
-#         print('>>>>>>>>>>>>>>>>resume model from path: ', model_path,flush=True)
-#         weights = torch.load(model_path)
-
-#         model.load_state_dict(weights)
-#         target_model.load_state_dict(weights)
-#         latest_model.load_state_dict(weights)
-
-#     storage = SharedStorage.remote(model, target_model, latest_model)
-
-#     batch_storage = BatchStorage(30, 40)
-
-
-#     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
-
-#     #batch_actor=5
-#     batch_workers = [BatchWorker.remote(idx, replay_buffer, storage, batch_storage, config)
-#                      for idx in range(config.batch_actor)]#by wjc
-
-#     # self-play
-#     #num_actors=2
-#     workers = [DataWorker.remote(rank, config, storage, replay_buffer) for rank in range(config.num_actors)] #changed to 1 actor
-#     workers = [worker.run_multi.remote() for worker in workers]
-#     # ray.get(replay_buffer.random_init_trajectory.remote(200))
-
-#     # batch maker
-#     workers += [batch_worker.run.remote() for batch_worker in batch_workers]
-#     # time.sleep(5)
-#     # storage.set_start_signal.remote()
-#     # for batch_worker in batch_workers:
-#         # print("launch batch")
-#         # batch_worker.run()
-#     # while True:
-#         # print("batch storage size ",(batch_storage.get_len()),flush=True)
-#         # time.sleep(2)
-#     # test
-#     workers += [_test.remote(config, storage)]
-#     # train
-#     final_weights = _train(model, target_model, latest_model, config, storage, replay_buffer, batch_storage, summary_writer)
-#     # wait all
-#     ray.wait(workers)
-
-#     return model, final_weights
-#=============================================================================
-
-def test_mcts(config, summary_writer=None, model_path=None):
-    model = config.get_uniform_network()
-    target_model = config.get_uniform_network()
-    latest_model = config.get_uniform_network()
-    if model_path:
-        print('resume model from path: ', model_path)
-        weights = torch.load(model_path)
-
-        model.load_state_dict(weights)
-        target_model.load_state_dict(weights)
-        latest_model.load_state_dict(weights)
-
-    storage = SharedStorage.remote(model, target_model, latest_model)
-
-    batch_storage = BatchStorage(8, 16)
-
-    replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
-
-    batch_workers = [BatchWorker.remote(idx, replay_buffer, storage, batch_storage, config)
-                     for idx in range(config.batch_actor)]
-
-    dw=DataWorker(0, config, storage, replay_buffer).run_multi()
-    # # self-play
-    # workers = [DataWorker.remote(rank, config, storage, replay_buffer) for rank in range(0, config.num_actors)]
-    # workers = [worker.run_multi.remote() for worker in workers]
-    # # ray.get(replay_buffer.random_init_trajectory.remote(200))
-
-    # # batch maker
-    # workers += [batch_worker.run.remote() for batch_worker in batch_workers]
-    # # test
-    # # workers += [_test.remote(config, storage)]
-    # # train
-    # final_weights = _train(model, target_model, latest_model, config, storage, replay_buffer, batch_storage, summary_writer)
-    # # wait all
-    # ray.wait(workers)
-
-    return model, final_weights
-
-def super(config, data_path, summary_writer=None):
-    storage = SharedStorage.remote(config.get_uniform_network())
-    assert (config.batch_size // config.replay_number * config.replay_number) == config.batch_size
-    replay_buffer_lst = [
-        ReplayBuffer.remote(num_replays=config.replay_number, config=config, replay_buffer_id=i, make_dataset=True) for
-        i in range(config.replay_number)]
-
-    ray.get([replay_buffer.load_files.remote(data_path) for replay_buffer in replay_buffer_lst])
-
-    _train(config, storage, replay_buffer_lst, summary_writer, None)
-
-    return config.get_uniform_network().set_weights(ray.get(storage.get_weights.remote()))
-
-
-def make_dataset(config, model):
-    storage = SharedStorage.remote(config.get_uniform_network())
-    storage.set_weights.remote(model.get_weights())
-    replay_buffer_lst = [
-        ReplayBuffer.remote(num_replays=config.replay_number, config=config, make_dataset=True, replay_buffer_id=i) for
-        i in range(config.replay_number)]
-
-    workers = [DataWorker.remote(rank, config, storage, replay_buffer_lst[rank % config.replay_number]) for rank in
-               range(0, config.num_actors)]
-    workers = [worker.run_multi.remote() for worker in workers]
-
-    ray.wait(workers)
-
-    data_workers = [replay_buffer.save_files.remote() for replay_buffer in replay_buffer_lst]
-    ray.get(data_workers)

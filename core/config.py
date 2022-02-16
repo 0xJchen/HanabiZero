@@ -64,12 +64,15 @@ class BaseMuZeroConfig(object):
                  reward_loss_coeff: float = 1,
                  value_loss_coeff: float = 1,
                  policy_loss_coeff: float = 1,
-                 consistency_coeff: float = 0,#@wjc
+                 consistency_coeff: float = 0,  # @wjc
                  reg_loss_coeff: float = 1e-4,
                  debug_batch: bool = False,
                  debug_interval: int = 100,
                  value_support: DiscreteSupport = None,
-                 reward_support: DiscreteSupport = None):
+                 reward_support: DiscreteSupport = None,
+                 optim: str ='sgd',
+                 local_state: bool = False,
+                 ):
 
         # Self-Play
         self.debug_batch = debug_batch
@@ -93,6 +96,8 @@ class BaseMuZeroConfig(object):
         self.num_simulations = num_simulations
         self.discount = discount
         self.max_grad_norm = 5
+        self.optim=optim
+        self.local_state=local_state
 
         # testing arguments
         self.test_interval = test_interval
@@ -156,7 +161,7 @@ class BaseMuZeroConfig(object):
         self.lr_init = lr_init
         self.lr_decay_rate = lr_decay_rate
         self.lr_decay_steps = lr_decay_steps
-        self.target_infer_size =64
+        self.target_infer_size = 64
         self.consist_type = consist_type
 
         # replay buffer
@@ -169,6 +174,7 @@ class BaseMuZeroConfig(object):
 
         # env
         self.image_channel = 3
+        
 
     def visit_softmax_temperature_fn(self, num_moves, trained_steps):
         raise NotImplementedError
@@ -194,36 +200,36 @@ class BaseMuZeroConfig(object):
         epsilon = 0.001
         sign = torch.ones(x.shape).float().to(x.device)
         sign[x < 0] = -1.0
-        output = sign * (torch.sqrt(torch.abs(x / delta) + 1) - 1 + epsilon * x / delta)
+        output = sign * (torch.sqrt(torch.abs(x / delta) +
+                         1) - 1 + epsilon * x / delta)
         return output
 
     def inverse_reward_transform(self, reward_logits):
-        return self.inverse_scalar_transform(reward_logits, self.reward_support,mode='reward')
+        return self.inverse_scalar_transform(reward_logits, self.reward_support, mode='reward')
 
     def inverse_value_transform(self, value_logits):
-        return self.inverse_scalar_transform(value_logits, self.value_support,mode='value')
+        return self.inverse_scalar_transform(value_logits, self.value_support, mode='value')
 
-    def inverse_scalar_transform(self, logits, scalar_support,mode=None):
+    def inverse_scalar_transform(self, logits, scalar_support, mode=None):
         """ Reference : Appendix F => Network Architecture
         & Appendix A : Proposition A.2 in https://arxiv.org/pdf/1805.11593.pdf (Page-11)
         """
         delta = self.value_support.delta
         value_probs = torch.softmax(logits, dim=1)
         value_support = torch.ones(value_probs.shape)
-        value_support[:, :] = torch.from_numpy(np.array([x for x in scalar_support.range]))
+        value_support[:, :] = torch.from_numpy(
+            np.array([x for x in scalar_support.range]))
         value_support = value_support.to(device=value_probs.device)
-        #print("in inverse transform: ",value_support.shape,value_probs.shape,flush=True)
         value = (value_support * value_probs).sum(1, keepdim=True) / delta
 
         epsilon = 0.001
         sign = torch.ones(value.shape).float().to(value.device)
         sign[value < 0] = -1.0
-        output = (((torch.sqrt(1 + 4 * epsilon * (torch.abs(value) + 1 + epsilon)) - 1) / (2 * epsilon)) ** 2 - 1)
+        output = (((torch.sqrt(1 + 4 * epsilon * (torch.abs(value) +
+                  1 + epsilon)) - 1) / (2 * epsilon)) ** 2 - 1)
         output = sign * output * delta
 
         nan_part = torch.isnan(output)
-        # if nan_part.any():
-        #     print('===========> in {} transform [ERROR]: NAN in scalar!!!'.format(mode),flush=True) when calling inverse_scalar_transform
         output[nan_part] = 0.
         return output
 
@@ -244,7 +250,8 @@ class BaseMuZeroConfig(object):
 
         target = torch.zeros(x.shape[0], x.shape[1], set_size).to(x.device)
         x_high_idx, x_low_idx = x_high - min / delta, x_low - min / delta
-        target.scatter_(2, x_high_idx.long().unsqueeze(-1), p_high.unsqueeze(-1))
+        target.scatter_(2, x_high_idx.long().unsqueeze(-1),
+                        p_high.unsqueeze(-1))
         target.scatter_(2, x_low_idx.long().unsqueeze(-1), p_low.unsqueeze(-1))
         return target
 
@@ -272,12 +279,17 @@ class BaseMuZeroConfig(object):
         # self.priority_top = args.priority_top
         self.write_back = args.write_back
         self.p_mcts_num = args.p_mcts_num
-        self.cpu_actor=args.cpu_actor
-        self.gpu_actor=args.gpu_actor
+        self.cpu_actor = args.cpu_actor
+        self.gpu_actor = args.gpu_actor
         # self.use_root_value = args.use_root_value
         self.reanalyze_part = args.reanalyze_part
         self.target_moving_average = args.target_moving_average
-        self.extra=args.extra
+        self.extra = args.extra
+
+        #snapshot
+        self.save_snapshot=args.save_snapshot
+        self.load_snapshot=args.load_snapshot
+        
         # augmentation
         if self.consistency_coeff > 0 and self.image_based:
             self.use_augmentation = True
@@ -294,16 +306,19 @@ class BaseMuZeroConfig(object):
             prior_tag = 'not_max'
             if args.use_max_priority:
                 prior_tag = 'max_prior'
-            prior_tag += '-alpha={}-beta={}-reward={}-tail={}-uniform={}'.format(self.priority_prob_alpha, self.priority_prob_beta, self.priority_reward_ratio, self.tail_ratio, self.uniform_ratio)
+            prior_tag += '-alpha={}-beta={}-reward={}-tail={}-uniform={}'.format(
+                self.priority_prob_alpha, self.priority_prob_beta, self.priority_reward_ratio, self.tail_ratio, self.uniform_ratio)
 
         aug_tag = 'no_aug'
         if self.use_augmentation:
             assert len(self.augmentation) > 0
             aug_tag = '+'.join(self.augmentation)
 
-        consist_tag = '{}_consist_{}'.format(self.consist_type, self.consistency_coeff)
+        consist_tag = '{}_consist_{}'.format(
+            self.consist_type, self.consistency_coeff)
 
-        game_tag = 'max_moves={}-start={}k-skip={}-stack={}'.format(self.max_moves, self.start_window_size // 1000, self.frame_skip, self.stacked_observations)
+        game_tag = 'max_moves={}-start={}k-skip={}-stack={}'.format(
+            self.max_moves, self.start_window_size // 1000, self.frame_skip, self.stacked_observations)
         if self.clip_reward:
             game_tag = 'clip_reward-' + game_tag
         if self.gray_scale:
@@ -311,13 +326,16 @@ class BaseMuZeroConfig(object):
         if self.episode_life:
             game_tag = 'one_life-' + game_tag
 
-        replay_tag = 'buffer_size={}m-slices={}'.format(self.transition_num, self.history_length)
-        self_play_tag = 'actor={}-mcts_num={}-ckpt_update={}'.format(self.num_actors, self.p_mcts_num, self.checkpoint_interval)
+        replay_tag = 'buffer_size={}m-slices={}'.format(
+            self.transition_num, self.history_length)
+        self_play_tag = 'actor={}-mcts_num={}-ckpt_update={}'.format(
+            self.num_actors, self.p_mcts_num, self.checkpoint_interval)
         if self.use_epsilon_greedy:
             self_play_tag = 'greedy-' + self_play_tag
         if self.random_start:
             self_play_tag = 'random-' + self_play_tag
-        train_tag = '{}Lr={}-steps=({}+{})k-batch={}-target_update={}-discount={:<0.4f}-dirichlet={}(delta={})'.format(self.lr_type, self.lr_init, self.training_steps // 1000, self.last_steps // 1000, self.batch_size, self.target_model_interval, self.discount, self.root_dirichlet_alpha, self.value_delta_max)
+        train_tag = '{}Lr={}-steps=({}+{})k-batch={}-target_update={}-discount={:<0.4f}-dirichlet={}(delta={})'.format(self.lr_type, self.lr_init, self.training_steps //
+                                                                                                                       1000, self.last_steps // 1000, self.batch_size, self.target_model_interval, self.discount, self.root_dirichlet_alpha, self.value_delta_max)
         if self.state_norm:
             train_tag = 'state_norm-' + train_tag
         if self.write_back:
@@ -325,9 +343,12 @@ class BaseMuZeroConfig(object):
         if self.change_temperature:
             train_tag = 'temperature-' + train_tag
 
-        tradeoff_tag = 'reward_coeff={}-val_coeff={}-policy_coeff={}'.format(self.reward_loss_coeff, self.value_loss_coeff, self.policy_loss_coeff)
-        reanalyze_tag = 'reanalyze_part={}-revisit={}'.format(self.reanalyze_part, self.revisit_policy_search_rate)
-        seed_tag = '{}-seed={}-node={}-extra={}'.format(datetime.date.today(), self.seed, self.num_simulations,self.extra)
+        tradeoff_tag = 'reward_coeff={}-val_coeff={}-policy_coeff={}'.format(
+            self.reward_loss_coeff, self.value_loss_coeff, self.policy_loss_coeff)
+        reanalyze_tag = 'reanalyze_part={}-revisit={}'.format(
+            self.reanalyze_part, self.revisit_policy_search_rate)
+        seed_tag = '{}-seed={}-node={}-extra={}'.format(
+            datetime.date.today(), self.seed, self.num_simulations, self.extra)
 
         self.exp_path = os.path.join(args.result_dir, args.case, args.env, prior_tag, aug_tag, consist_tag, game_tag,
                                      replay_tag, self_play_tag, train_tag, tradeoff_tag, reanalyze_tag, args.info,
@@ -335,4 +356,9 @@ class BaseMuZeroConfig(object):
 
         self.model_path = os.path.join(self.exp_path, 'model.p')
         self.model_dir = os.path.join(self.exp_path, 'model')
+
+
+
+
+
         return self.exp_path

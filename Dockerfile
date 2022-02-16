@@ -1,5 +1,7 @@
-FROM nvidia/cuda:10.0-cudnn7-devel
-EXPOSE 3000 5000
+#FROM nvidia/cuda:10.0-cudnn7-devel
+#FROM nvidia/cuda:11.0-cudnn8-runtime-ubuntu18.04
+FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-devel
+EXPOSE 3000 5000  8625 8265 
 
 
 RUN apt-get update
@@ -8,36 +10,24 @@ RUN apt-get -y install build-essential
 RUN apt-get install -y unzip
 RUN apt-get install -y wget
 RUN apt-get install -y vim
-RUN add-apt-repository ppa:mhier/libboost-latest
 RUN apt update
-RUN apt install -y libboost1.68-dev
 
-RUN apt-get update
 RUN apt-get install -y python3-pip
 RUN apt-get -y install python3-setuptools
+RUN apt-get -y install tmux
+RUN apt-get -y install git
+RUN apt-get -y install cmake
+RUN apt-get install -y libsm6 libxext6
+RUN apt-get install -y libxrender-dev 
+RUN apt-get install lsof
 
-WORKDIR /
-#RUN wget -q https://download.pytorch.org/libtorch/cu100/libtorch-shared-with-deps-latest.zip
-#RUN unzip -q libtorch-shared-with-deps-latest.zip
-
-# RUN pip3 install torch==1.2.0
-# RUN apt-get install -y zlib1g-dev
-# RUN pip3 install quart
-
-# RUN pip3 install -r requirements.txt 
-
-COPY . /home/game
-WORKDIR /home/game
-
-# ENV SEARCH_THRESH 0.1
-# ENV SEARCH_BASELINE 1
-# ENV PARTNER_UNC 0.2
-# ENV SEARCH_N 10000
-# ENV NUM_THREADS 1000
-# ENV BPBOT TorchBot
-# ENV TORCHBOT_MODEL best_lstm2.pth
-
-# RUN INSTALL_TORCHBOT=1 python3 setup.py install
-
-# ENV BOT TorchBot
-# CMD [ "sh", "-c", "python3 -u webapp/server.py" ]
+COPY ./requirements.txt /home
+COPY ./baselines /home
+WORKDIR /home
+RUN ls /home
+RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple  
+RUN pip3 install -v torch==1.7.1  -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip3 install google-auth --upgrade  -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip3 install ray --upgrade  -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install -e baselines -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install ray==1.0.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
