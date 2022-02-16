@@ -53,12 +53,12 @@ sk-video==1.1.10
 snakeviz==1.0.0
 tensorboard==2.0.0
 tensorboard-logger==0.1.0
-tensorboardX==2.0
-tensorflow==2.0.0
-tensorflow-estimator==2.0.0
+#tensorboardX==2.0
+#tensorflow==2.0.0
+#tensorflow-estimator==2.0.0
 termcolor==1.1.0
-torch==1.5.1+cu101
-torchvision==0.6.1+cu101
+#torch==1.5.1+cu101
+#torchvision==0.6.1+cu101
 tornado==5.1.1
 urllib3==1.23
 websocket-client==0.53.0
