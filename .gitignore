@@ -15,4 +15,5 @@ __pycache__/
 *.cc.o
 *.0
 *.p
+*.npy
 .history/*

@@ -17,7 +17,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
             vis_interval=1000,
             test_episodes=40,
             checkpoint_interval=1000,
-            target_model_interval=100,#changed from 1k @wjc
+            target_model_interval=200,#changed from 1k @wjc
             save_ckpt_interval=10000,
             max_moves=60,#@wjc
             test_max_moves=60,#@wjc
@@ -40,13 +40,13 @@ class HanabiControlConfig(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.001,
+            lr_warm_up=0.01,
             lr_type='step',
             lr_init=args.lr,
             lr_decay_rate=args.decay_rate,
             lr_decay_steps=20000,
             # replay window
-            start_window_size=40,#@wjc mannualy changed from 40 to 1 for debugging
+            start_window_size=10000,#@wjc mannualy changed from 40 to 1 for debugging
             window_size=125000,#useless
             transition_num=1,
             # frame skip & stack observation
@@ -152,9 +152,9 @@ class HanabiControlConfig(BaseMuZeroConfig):
 class HanabiControlConfigFull(BaseMuZeroConfig):
     def __init__(self,args):
         super(HanabiControlConfigFull, self).__init__(
-            training_steps=2000000,
+            training_steps=3000000,
             last_steps=100,
-            test_interval=4000,#changed to 1000
+            test_interval=3000,#changed to 1000
             log_interval=1000,
             vis_interval=1000,
             test_episodes=80,
@@ -205,7 +205,9 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             debug_interval=args.debug_interval,
         # value reward support
             value_support=DiscreteSupport(-100, 100, delta=1),
-            reward_support=DiscreteSupport(-100, 100, delta=1))#@wjc what?
+            reward_support=DiscreteSupport(-100, 100, delta=1),
+            rmsprop=args.rmsprop,
+            )#@wjc what?
 
         self.discount **= self.frame_skip
         # self.max_moves //= self.frame_skip#@wjc max move should just be 80

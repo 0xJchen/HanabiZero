@@ -42,7 +42,7 @@ class ReplayBuffer(object):
         self.base_idx = 0
         self._alpha = config.priority_prob_alpha
         # self._beta = config.priority_prob_beta
-        self.transition_top = int(config.transition_num *130* 10 ** 4)#@wjc, changed from 120w for testing
+        self.transition_top = int(config.transition_num *100* 10 ** 4)#@wjc, changed from 10**6 for testing
         self.clear_time = 0
 
     def random_init_trajectory(self, num):
@@ -79,7 +79,9 @@ class ReplayBuffer(object):
     def load_files(self, path=None):
         if path is None:
             path = self.config.exp_path
+        
         dir = os.path.join(path, 'replay', str(self.replay_buffer_id))
+        dir='/home/game/jan/buffer'
         print('Loading from ', dir, ' ...')
         assert os.path.exists(dir)
 
@@ -94,27 +96,44 @@ class ReplayBuffer(object):
         assert self.game_look_up[-1][0] == self.base_idx + buffer_len - 1
 
         env = self.config.new_game(0)
+        ls=time.time()
+        gamebuffer=d2=np.load(os.path.join(dir, "gamebuffer.npy"), allow_pickle=True).item()
+
+        print("load game buffer takes {}".format(time.time()-ls),flush=True)
         for i in tqdm(range(buffer_len)):
             game = GameHistory(env.env.action_space, max_length=self.config.history_length, config=self.config)
-            path = os.path.join(dir, str(i))
-            game.load_file(path)
-
+            # path = os.path.join(dir, str(i))
+            game.load_file(gamebuffer[str(i)])
             self.buffer.append(game)
+        # env = self.config.new_game(0)
+        # for i in tqdm(range(buffer_len)):
+        #     game = GameHistory(env.env.action_space, max_length=self.config.history_length, config=self.config)
+        #     path = os.path.join(dir, str(i))
+        #     game.load_file(path)
+
+        #     self.buffer.append(game)
         print('Load Over.')
 
-    def save_files(self):
-        dir = os.path.join(self.config.exp_path, 'replay', str(self.replay_buffer_id))
+    def save_files(self,id):
+        dir = os.path.join(self.config.exp_path, 'replay', str(id))
         print('dir: ', dir)
         if not os.path.exists(dir):
             os.makedirs(dir)
+        # print(dir)
 
         np.save(os.path.join(dir, 'prior.npy'), np.array(self.priorities))
         np.save(os.path.join(dir, 'game_look_up.npy'), np.array(self.game_look_up))
         np.save(os.path.join(dir, 'utils.npy'), np.array([self.base_idx, len(self.buffer)]))
 
+        # for i, game in enumerate(self.buffer):
+        #     path = os.path.join(dir, str(i))
+        #     game.save_file(path)
+        st=time.time()
+        buffer_dict={}
         for i, game in enumerate(self.buffer):
-            path = os.path.join(dir, str(i))
-            game.save_file(path)
+            buffer_dict[str(i)]=game.save_file()
+        np.save(os.path.join(dir,'gamebuffer.npy'), buffer_dict)
+        print("finish saving {} length buffer with {}s".format(len(self.buffer),time.time()-st),flush=True)
 
     def save_pools(self, pools, gap_step):
         if self.make_dataset:

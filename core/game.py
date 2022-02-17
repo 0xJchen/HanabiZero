@@ -69,6 +69,7 @@ class GameHistory:
 
         #@wjc
         self.legal_actions = []
+        self.ks=['visits', 'root', 'actions', 'obs', 'reward', 'tar_v', 'tar_r', 'tar_p']
 
     def init(self, init_observations, init_legal_action):
         self.child_visits = []
@@ -120,37 +121,44 @@ class GameHistory:
     def legal_actions(self):
         return [_ for _ in range(self.action_space.n)]
 
-    def load_file(self, path):
-        assert os.path.exists(path)
+    def load_file(self, gdict):
+        # assert os.path.exists(path)
+        self.target_values = gdict['tar_v']
+        self.target_rewards = gdict['tar_r']
+        self.target_policies = gdict['tar_p']
+        self.child_visits = gdict['vis']
+        self.root_values = gdict['root']
 
-        self.child_visits = np.load(os.path.join(path, 'visits.npy'))
-        self.root_values = np.load(os.path.join(path, 'root.npy'))
+        self.actions = gdict['a']
+        self.obs_history = ray.put(gdict['o'])
+        self.rewards = gdict['r']
+        self.legal_actions=gdict['la']
 
-        self.actions = np.load(os.path.join(path, 'actions.npy')).tolist()
-        self.obs_history = np.load(os.path.join(path, 'obs.npy'))
-        self.rewards = np.load(os.path.join(path, 'reward.npy'))
+        # # last_observations = [self.obs_history[-1] for i in range(self.config.num_unroll_steps)]
+        # # self.obs_history = np.concatenate((self.obs_history, last_observations))
 
-        # last_observations = [self.obs_history[-1] for i in range(self.config.num_unroll_steps)]
-        # self.obs_history = np.concatenate((self.obs_history, last_observations))
+        # self.target_values = np.load(os.path.join(path, 'target_values.npy'))
+        # self.target_rewards = np.load(os.path.join(path, 'target_rewards.npy'))
+        # self.target_policies = np.load(os.path.join(path, 'target_policies.npy'))
 
-        self.target_values = np.load(os.path.join(path, 'target_values.npy'))
-        self.target_rewards = np.load(os.path.join(path, 'target_rewards.npy'))
-        self.target_policies = np.load(os.path.join(path, 'target_policies.npy'))
+    def save_file(self):
+        # if not os.path.exists(path):
+        #     os.mkdir(path)
 
-    def save_file(self, path):
-        if not os.path.exists(path):
-            os.mkdir(path)
+        # np.save(os.path.join(path, 'visits.npy'), np.array(self.child_visits))
+        # np.save(os.path.join(path, 'root.npy'), np.array(self.root_values))
 
-        np.save(os.path.join(path, 'visits.npy'), np.array(self.child_visits))
-        np.save(os.path.join(path, 'root.npy'), np.array(self.root_values))
+        # np.save(os.path.join(path, 'actions.npy'), np.array(self.actions))
+        # np.save(os.path.join(path, 'obs.npy'), np.array(self.obs_history))
+        # np.save(os.path.join(path, 'reward.npy'), np.array(self.rewards))
 
-        np.save(os.path.join(path, 'actions.npy'), np.array(self.actions))
-        np.save(os.path.join(path, 'obs.npy'), np.array(self.obs_history))
-        np.save(os.path.join(path, 'reward.npy'), np.array(self.rewards))
-
-        np.save(os.path.join(path, 'target_values.npy'), np.array(self.target_values))
-        np.save(os.path.join(path, 'target_rewards.npy'), np.array(self.target_rewards))
-        np.save(os.path.join(path, 'target_policies.npy'), np.array(self.target_policies))
+        # np.save(os.path.join(path, 'target_values.npy'), np.array(self.target_values))
+        # np.save(os.path.join(path, 'target_rewards.npy'), np.array(self.target_rewards))
+        # np.save(os.path.join(path, 'target_policies.npy'), np.array(self.target_policies))
+        return {'vis':np.array(self.child_visits), 'root':np.array(self.root_values), 'a':np.array(self.actions),\
+        'o':np.array(ray.get(self.obs_history)), 'r':np.array(self.rewards), 'tar_v':np.array(self.target_values),\
+        'tar_r':np.array(self.target_rewards), 'tar_p':np.array(self.target_policies), 'la':np.array(self.legal_actions) }
+        
 
     def append(self, action, obs, reward, legal_action):
         self.actions.append(action)

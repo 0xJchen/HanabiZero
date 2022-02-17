@@ -715,7 +715,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     #================
     # obs_batch_ori, action_batch, mask_batch, target_reward, target_value, target_policy, indices, weights_lst, make_time = batch
     #================
-    print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
+    #print("original obs batch: ",torch.from_numpy(obs_batch_ori).shape,flush=True)
     #n=["obs","a","mask","re","val","p","idx","weight_idx","make_time"]
     #for idx,item in enumerate(batch):
     #    sanity_check(item,n[idx])
@@ -779,7 +779,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     # print("target: ",target_value.shape,transformed_target_value.shape,target_value_phi.shape,flush=True)
 
     with autocast():
-        print("start learner inference",obs_batch.shape,obs_batch.reshape(batch_size, -1).shape,flush=True)
+        # print("start learner inference",obs_batch.shape,obs_batch.reshape(batch_size, -1).shape,flush=True)
         value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
     #print("====>in train,",type(value),flush=True)
     scaled_value = config.inverse_value_transform(value)
@@ -997,10 +997,10 @@ def adjust_lr(config, optimizer, step_count, scheduler):
         else:
 
             tmp_lr = config.lr_init * config.lr_decay_rate ** ((step_count - config.lr_warm_step) // config.lr_decay_steps)
-            if tmp_lr >= 0.001:
+            if tmp_lr >= 0.0001:
                 lr=tmp_lr
             else:
-                lr=0.001
+                lr=0.0001
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
 
@@ -1208,7 +1208,7 @@ class BatchWorker(object):
         return batch
 
 
-def _train(model, target_model, latest_model, config, shared_storage, replay_buffer, batch_storage, summary_writer):
+def _train(model, target_model, latest_model, config, shared_storage, replay_buffer, batch_storage, summary_writer, snapshot):
 
     # ----------------------------------------------------------------------------------
     model = model.to(config.device)
@@ -1219,7 +1219,17 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     latest_model.eval()
 
     optimizer = optim.SGD(model.parameters(), lr=config.lr_init, momentum=config.momentum,
-                          weight_decay=config.weight_decay)
+                           weight_decay=config.weight_decay)
+
+    print("using RMSprop OPTIM={}".format(config.rmsprop!=0),flush=True)
+    # if config.rmsprop!=0:
+    #     optimizer = optim.RMSprop(model.parameters(), lr=config.lr_init, momentum=config.momentum,
+    #                       weight_decay=config.weight_decay)
+    # else:
+    #     optimizer = optim.SGD(model.parameters(), lr=config.lr_init, momentum=config.momentum,
+    #                       weight_decay=config.weight_decay)
+    #optimizer = optim.Adam(model.parameters(),lr=config.lr_init,eps=1e-5)
+
 
     if config.amp_type == 'nvidia_apex':
         model, optimizer = amp.initialize(model, optimizer, opt_level=config.opt_level)
@@ -1256,19 +1266,30 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     time_100k=time.time()
     _interval=config.debug_interval
     _debug_batch=config.debug_batch
-    while step_count < config.training_steps + config.last_steps:
 
+    #while step_count < config.training_steps + config.last_steps:
+    while True:
         # @profile
         # def f(batch_count, step_count, lr, make_time):
         if step_count % 200 == 0:#@wjc changed to 100 for debugging
             replay_buffer.remove_to_fit.remote()
-
+        if step_count in snapshot:
+            print("============>replay buffer start")
+            op_dir=os.path.join(config.exp_path, 'replay',str(step_count))
+            if not os.path.exists(op_dir):
+                os.makedirs(op_dir)
+            replay_buffer.save_files.remote(id=step_count)
+            op_dir = os.path.join(config.exp_path, 'replay',str(step_count))
+            print(op_dir,os.path.exists(op_dir))
+            print(os.path.join(op_dir,'op.pt'))
+            torch.save(optimizer.state_dict(),os.path.join(op_dir,'op.pt'))
+            print("============>replay buffer finish")
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
             time.sleep(0.5)#0.3->2
             # if _debug_batch:
-            # print("LEARNER WAITING!",flush=True)
+            print("LEARNER WAITING!",flush=True)
             continue
         # print("making one batch takes: ", time.time()-before_btch,flush=True)
         shared_storage.incr_counter.remote()
@@ -1372,6 +1393,10 @@ def train(config, summary_writer=None, model_path=None):
 
     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
 
+    # replay_buffer.load_files.remote('foo')
+    # print("====>finish loading replay buffer")
+    time.sleep(5)
+
     workers=[]
     # reanalyze workers
     cpu_workers = [BatchWorker_CPU.remote(idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.cpu_actor)]
@@ -1399,7 +1424,7 @@ def train(config, summary_writer=None, model_path=None):
     # test
     workers += [_test.remote(config, storage)]
     # train
-    final_weights = _train(model, target_model, latest_model, config, storage, replay_buffer, batch_storage, summary_writer)
+    final_weights = _train(model, target_model, latest_model, config, storage, replay_buffer, batch_storage, summary_writer, [200000, 400000,1000000])
     # wait all
     ray.wait(workers)
 

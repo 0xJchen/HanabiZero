@@ -1,0 +1,2 @@
+[2022-02-16 16:37:19,981][train_test][INFO][train.py>_log] ==> #1000       Test Mean Score: 1.37      (Max: 7         )
+[2022-02-16 16:45:25,878][train_test][INFO][train.py>_log] ==> #4000       Test Mean Score: 1.22      (Max: 4         )

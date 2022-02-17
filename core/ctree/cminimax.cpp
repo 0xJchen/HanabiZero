@@ -38,7 +38,7 @@ namespace tools{
             else{
                 norm_value = (norm_value - this->minimum) / delta;
             }
-            if(norm_value > 1) printf("[ERROR] of normed value!!\n");
+//if(norm_value > 1) printf("[ERROR] of normed value!!\n");
         }
         return norm_value;
     }

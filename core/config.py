@@ -69,8 +69,11 @@ class BaseMuZeroConfig(object):
                  debug_batch: bool = False,
                  debug_interval: int = 100,
                  value_support: DiscreteSupport = None,
-                 reward_support: DiscreteSupport = None):
-
+                 reward_support: DiscreteSupport = None,
+                 rmsprop: int = 0
+                 ):
+        #@wjc
+        self.rmsprop=rmsprop
         # Self-Play
         self.debug_batch = debug_batch
         self.debug_interval = debug_interval

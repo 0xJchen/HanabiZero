@@ -29,6 +29,34 @@ class ResMLP(nn.Module):
         x = nn.functional.relu(x)
         return x
 
+class NewResMLP(nn.Module):
+    def __init__(self, in_dim):
+        super(NewResMLP, self).__init__()
+        self.in_dim = in_dim
+
+        self.fc1 = nn.Linear(in_dim, in_dim)
+        self.bn1 = nn.BatchNorm1d(in_dim)
+
+        self.fc2 = nn.Linear(in_dim, in_dim)
+        self.bn2 = nn.BatchNorm1d(in_dim)
+
+    def forward(self, x):
+        _x = x
+
+        x = self.fc1(x)
+        x = self.bn1(x)
+
+
+        x = nn.functional.relu(x)
+
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x += _x
+
+        x = nn.functional.relu(x)
+        return x
+
+
 
 class DynamicNet(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -62,6 +90,39 @@ class DynamicNet(nn.Module):
         next_state = nn.functional.relu(x)
         return next_state
 
+class NewDynamicNet(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(NewDynamicNet, self).__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.fc1 = nn.Linear(state_dim + action_dim, state_dim)
+        self.bn1 = nn.BatchNorm1d(state_dim)
+
+        self.fc2 = nn.Linear(state_dim, state_dim)
+        self.bn2 = nn.BatchNorm1d(state_dim)
+
+        self.fc3 = nn.Linear(state_dim, state_dim)
+        self.bn3 = nn.BatchNorm1d(state_dim)
+
+    def forward(self, state_action):
+        state = state_action[:, :self.state_dim]
+        x = self.fc1(state_action)
+        x = self.bn1(x)
+
+
+        x = nn.functional.relu(x)
+
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x = nn.functional.relu(x)
+
+        x = self.fc3(x)
+        x = self.bn3(x)
+
+        x += state
+        next_state = nn.functional.relu(x)
+        return next_state
 
 class MuZeroNet(BaseMuZeroNet):
     def __init__(self, input_size, action_space_n, reward_support_size, value_support_size,
@@ -199,9 +260,10 @@ class MuZeroNetFull(BaseMuZeroNet):
         self.state_norm = state_norm
         self.action_space_n = action_space_n
         self.feature_size = 512
-        self.init_size= 1024
-        self.actor_hidden = 128
+        # self.init_size= 1024
+        # self.actor_hidden = 128
         self.hidden_size = 256
+        # self.hidden_sec = 128
         #print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
        # self._representation = nn.Sequential(nn.Linear(input_size, self.init_size),
        #                                      nn.BatchNorm1d(self.init_size),
@@ -216,21 +278,31 @@ class MuZeroNetFull(BaseMuZeroNet):
         #self._representation = nn.Sequential(nn.Linear(input_size,self.init_size),nn.BatchNorm1d(self.init_size),nn.ReLU(),\
         #                                     nn.Linear(self.init_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),\
         #                                     ResMLP(self.feature_size))
-        self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),ResMLP(self.feature_size))
-        self._dynamics_state = DynamicNet(self.feature_size, action_space_n)
+        self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),NewResMLP(self.feature_size))
+        self._dynamics_state = NewDynamicNet(self.feature_size, action_space_n)
         self._dynamics_reward = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
+                                              nn.BatchNorm1d(self.hidden_size),
+                                              nn.ReLU(),
+                                              nn.Linear(self.hidden_size, self.hidden_size),
                                               nn.BatchNorm1d(self.hidden_size),
                                               nn.ReLU(),
                                               nn.Linear(self.hidden_size, reward_support_size))
         self._prediction_actor = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
                                                nn.BatchNorm1d(self.hidden_size),
                                                nn.ReLU(),
-                                               nn.Linear(self.hidden_size, action_space_n),
-                                               nn.BatchNorm1d(self.action_space_n),
-                                               nn.ReLU(),
-                                               nn.Linear(self.action_space_n,action_space_n)
+                                               NewResMLP(self.hidden_size),
+                                            #    nn.Linear(self.hidden_size,self.hidden_sec),
+                                            #    nn.BatchNorm1d(self.hidden_sec),
+                                            #    nn.ReLU(),
+                                            #    nn.Linear(self.hidden_sec,self.hidden_sec//2), #512->256->128->64->20
+                                            #    nn.BatchNorm1d(self.hidden_sec//2),
+                                            #    nn.ReLU(),
+                                               nn.Linear(self.hidden_size,self.action_space_n)
                                                )
         self._prediction_value = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
+                                               nn.BatchNorm1d(self.hidden_size),
+                                               nn.ReLU(),
+                                               nn.Linear(self.hidden_size, self.hidden_size),
                                                nn.BatchNorm1d(self.hidden_size),
                                                nn.ReLU(),
                                                nn.Linear(self.hidden_size, value_support_size))
@@ -312,7 +384,7 @@ class MuZeroNetFull(BaseMuZeroNet):
         action_one_hot.scatter_(1, action, 1.0)
 
         x = torch.cat((state, action_one_hot), dim=1)#x is fine here.
-        next_state = self._dynamics_state(x)#next_state.max() might contain inf, which leads to inf when 
+        next_state = self._dynamics_state(x)#next_state.max() might contain inf, which leads to inf when
         reward = self._dynamics_reward(next_state)
 
         # for nan_idx in range(reward.shape[0]):

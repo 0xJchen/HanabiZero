@@ -26,8 +26,8 @@ python3 ../main.py --env Hanabi-Full --case hanabi --opr test --seed 10 --num_gp
   --lr 0.1 \
   --stack 1 \
   --load_model \
-  --model_path 'recent' \
-  --test_start 96 \
+  --model_path 'recent/model' \
+  --test_start 70 \
   --test_end 97
 
   #--debug_batch \
