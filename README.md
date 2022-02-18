@@ -2,7 +2,7 @@
 
 Solve cooperative imperfect information multi-agent game "Hanabi" with SoTA model-based reinforcement learning methods from scratch through self-play and without human knowledge. Build on top of [EfficientZero](https://github.com/YeWR/EfficientZero)
 
-Motivationt: this project can be understood in a broader background: *How do Model-based RL work in Partially-observable (or moreover, stochastic) environment?*. Model-free methods like `actor-critic` can simply train an oracle `critic` that takes input as the gloval state. While there's no such equivalence in MBRL.
+Motivation: this project can be understood in a broader background: *(In CTDE regime,) How do Model-based RL work in Partially-observable (or moreover, stochastic) environment?*. Model-free methods like `actor-critic` can simply train an oracle `critic` that takes input as the gloval state. While there's no such equivalence in MBRL.
 
 Direcly train with global-state or oracle-regression (we proposed) reaches ~ 23/25. Currently debugging whether there's something wrong with the codebase (in one sence, training on global state should reaches at least SOTA performance, which is at least `24+`). This branch currently contains the code of training with either `global` or `local` states.
 
