@@ -88,19 +88,21 @@ class HanabiControlConfig(BaseMuZeroConfig):
         self.env_name = env_name
         game = self.new_game()
 
-        reset_obs,_=game.reset()
+        reset_obs,local_reset_obs, _=game.reset()
         reset_obs=np.asarray(reset_obs)
+        local_reset_obs=np.asarray(local_reset_obs)
         # print("in set_game",reset_obs.shape)
         self.obs_shape = reset_obs.shape[0] * self.stacked_observations
+        self.local_obs_shape=local_reset_obs[0]* self.stacked_observations
         self.action_space_size = game.action_space_size
-        print("action space =",self.action_space_size,flush=True)
+        print("action space ={},global={},local={}".format(self.action_space_size,self.obs_shape,self.local_obs_shape),flush=True)
     def get_uniform_network(self):
         # print("obs shape,",self.obs_shape,self.action_space_size, len(self.new_game().reset()[0]))
 
         if self.env_name=='Hanabi-Small':
             if self.const>0:
                 return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
-                         self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm, proj=True)
+                         self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm, proj=True,local_input_size=self.local_obs_shape)
             else:
                 return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
                          self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm)

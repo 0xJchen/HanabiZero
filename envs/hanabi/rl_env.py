@@ -290,16 +290,19 @@ class HanabiEnv(Environment):
         cur_p=self.state.cur_player()
         # print("in reset,",len(observation['player_observations'][cur_p]['vectorized']))
         obs=observation['player_observations'][cur_p]['vectorized']+agent_turn
-        share_obs.append(observation['player_observations'][cur_p]['vectorized_ownhand']+observation['player_observations'][cur_p]['vectorized']+agent_turn)
+        # share_obs.append(observation['player_observations'][cur_p]['vectorized_ownhand']+observation['player_observations'][cur_p]['vectorized']+agent_turn)
+        extra=observation['player_observations'][cur_p]['vectorized_ownhand']
         available_actions[observation['player_observations'][cur_p]['legal_moves_as_int']]=1
     else:
+        assert False
         obs = np.zeros((self.vectorized_observation_shape()[0]+self.players))
         share_obs = np.zeros((self.vectozed_share_observation_shape()[0]+self.players))
         # available_actions = np.zeros(self.num_moves())
     #print("in hanabi env, vec={},my hand={}".format(np.array(observation['player_observations'][cur_p]['vectorized']).shape, np.array(observation['player_observations'][cur_p]['vectorized_ownhand']).shape),flush=True)
     # return obs, share_obs, available_actions
     # print("in hanabienv: ",len(obs[0]),len(available_actions),self.vectorized_observation_shape())
-    return share_obs[0], list(available_actions)
+    # return share_obs[0],obs, list(available_actions)
+    return obs, extra, list(available_actions)
     #return obs, list(available_actions)
   def vectorized_observation_shape(self):
     """Returns the shape of the vectorized observation.
@@ -472,7 +475,8 @@ class HanabiEnv(Environment):
     # obs=observation['player_observations'][self.state.cur_player()]['vectorized'] + agent_turn
     cur_p=self.state.cur_player()
     obs=observation['player_observations'][cur_p]['vectorized']+agent_turn
-    share_obs.append(observation['player_observations'][cur_p]['vectorized_ownhand']+observation['player_observations'][cur_p]['vectorized']+agent_turn)
+    # share_obs.append(observation['player_observations'][cur_p]['vectorized_ownhand']+observation['player_observations'][cur_p]['vectorized']+agent_turn)
+    extra=observation['player_observations'][cur_p]['vectorized_ownhand']
     available_actions[observation['player_observations'][self.state.cur_player()]['legal_moves_as_int']]=1
 
     done = self.state.is_terminal()
@@ -481,7 +485,8 @@ class HanabiEnv(Environment):
     # rewards = reward
     infos = {'score':self.state.score()}
     # print("obs shape: ", len(share_obs[0]),len(obs),flush=True)
-    return share_obs[0], rewards, done, infos, list(available_actions)
+    # return share_obs[0],obs, rewards, done, infos, list(available_actions)
+    return obs, extra, rewards, done, infos, list(available_actions)
    # return obs, rewards, done, infos, list(available_actions)
   def _make_observation_all_players(self):
     """Make observation for all players.

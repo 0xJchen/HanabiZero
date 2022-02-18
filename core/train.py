@@ -587,7 +587,7 @@ class DataWorker(object):
                             deterministic = False
                         # print("before select action: ",len(stack_legal_actions))
                         action, visit_entropy = select_action(distributions, temperature=temperature, deterministic=deterministic, legal_actions=stack_legal_actions[i])
-                        obs, ori_reward, done, info, legal_action = env.step(action)
+                        obs,local_obs, ori_reward, done, info, legal_action = env.step(action)
                         #if not np.any(legal_action):
                         #    print("step:",done,legal_action,flush=True)
                         #    print("after step, legal a type",type(legal_action))
@@ -709,7 +709,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     total_transitions=0
 
     inputs_batch, targets_batch = batch
-    obs_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time = inputs_batch
+    obs_batch_ori, baby_obs_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time = inputs_batch
     target_reward, target_value, target_policy = targets_batch
 
     #================
@@ -781,6 +781,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     with autocast():
         # print("start learner inference",obs_batch.shape,obs_batch.reshape(batch_size, -1).shape,flush=True)
         value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
+        baby_value, _, baby_policy_logits, baby_hidden_state = model.baby_initial_inference(baby_obs_batch.reshape(batch_size, -1))
     #print("====>in train,",type(value),flush=True)
     scaled_value = config.inverse_value_transform(value)
     if vis_result:
@@ -808,22 +809,6 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
         for step_i in range(config.num_unroll_steps):
             value, reward, policy_logits, hidden_state = model.recurrent_inference(hidden_state, action_batch[:, step_i])
 
-            beg_index = config.image_channel * step_i
-            end_index = config.image_channel * (step_i + config.stacked_observations)
-
-            if config.consistency_coeff > 0:
-                #will not run here
-                #assert False
-                _, _, _, presentation_state = model.initial_inference(obs_target_batch[:, beg_index:end_index, :].reshape(batch_size, -1))
-                if config.consist_type is 'contrastive':
-                    temp_loss = model.contrastive_loss(hidden_state, presentation_state) * mask_batch[:, step_i]
-                else:
-                    dynamic_proj = model.project(hidden_state, with_grad=True)
-                    observation_proj = model.project(presentation_state, with_grad=False)
-                    temp_loss = consist_loss_func(dynamic_proj, observation_proj) * mask_batch[:, step_i]
-
-                other_loss['consist_' + str(step_i + 1)] = temp_loss.mean().item()
-                consistency_loss += temp_loss
 
             policy_loss += -(torch.log_softmax(policy_logits, dim=1) * target_policy[:, step_i + 1]).sum(1)
             value_loss += config.scalar_value_loss(value, target_value_phi[:, step_i + 1])

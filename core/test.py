@@ -121,7 +121,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
 
                 action, _ = select_action(distributions, temperature=1, deterministic=True,legal_actions=stack_legal_actions[i])
 
-                obs, ori_reward, done, info, legal_a = env.step(int(action))
+                obs,local_obs, ori_reward, done, info, legal_a = env.step(int(action))
                 if config.clip_reward:
                     clip_reward = np.sign(ori_reward)
                 else:

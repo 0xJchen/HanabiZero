@@ -126,7 +126,7 @@ class NewDynamicNet(nn.Module):
 
 class MuZeroNet(BaseMuZeroNet):
     def __init__(self, input_size, action_space_n, reward_support_size, value_support_size,
-                 inverse_value_transform, inverse_reward_transform, state_norm=False, proj=False):
+                 inverse_value_transform, inverse_reward_transform, state_norm=False, proj=False, local_input_size=None):
         super(MuZeroNet, self).__init__(inverse_value_transform, inverse_reward_transform)
         self.state_norm = state_norm
         self.action_space_n = action_space_n
@@ -144,6 +144,9 @@ class MuZeroNet(BaseMuZeroNet):
         #                                     nn.ReLU()
         #                                     )
         self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),ResMLP(self.feature_size))
+        if local_input_size:
+            self._baby_representation = nn.Sequential(nn.Linear(local_input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),ResMLP(self.feature_size))
+
         self._dynamics_state = DynamicNet(self.feature_size, action_space_n)
         self._dynamics_reward = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
                                               nn.BatchNorm1d(self.hidden_size),
@@ -165,34 +168,34 @@ class MuZeroNet(BaseMuZeroNet):
         self._prediction_actor[-1].weight.data.fill_(0)
         self._prediction_actor[-1].bias.data.fill_(0)
 
-        self.proj_hid = 512
-        self.proj_out = 512
-        self.pred_hid = 128
-        self.pred_out = 512
+        # self.proj_hid = 512
+        # self.proj_out = 512
+        # self.pred_hid = 128
+        # self.pred_out = 512
 
-        if proj:
-            assert False
-            self.projection = nn.Sequential(
-                 nn.Linear(self.feature_size, self.proj_hid),
-                 nn.BatchNorm1d(self.proj_hid),
-                nn.ReLU(),
-                  nn.Linear(self.proj_hid, self.proj_hid),
-                 nn.BatchNorm1d(self.proj_hid),
-              nn.ReLU(),
-              nn.Linear(self.proj_hid, self.proj_out),
-              nn.BatchNorm1d(self.proj_out)
-          )
+        # if proj:
+        #     assert False
+        #     self.projection = nn.Sequential(
+        #          nn.Linear(self.feature_size, self.proj_hid),
+        #          nn.BatchNorm1d(self.proj_hid),
+        #         nn.ReLU(),
+        #           nn.Linear(self.proj_hid, self.proj_hid),
+        #          nn.BatchNorm1d(self.proj_hid),
+        #       nn.ReLU(),
+        #       nn.Linear(self.proj_hid, self.proj_out),
+        #       nn.BatchNorm1d(self.proj_out)
+        #   )
         #@wjc simplufy useless module
         #    self.projection = nn.Sequential(
         #     nn.Linear(self.feature_size, self.proj_out),
         #    )
 
-            self.projection_head = nn.Sequential(
-                 nn.Linear(self.proj_out, self.pred_hid),
-                nn.BatchNorm1d(self.pred_hid),
-                nn.ReLU(),
-                nn.Linear(self.pred_hid, self.pred_out),
-            )
+            # self.projection_head = nn.Sequential(
+            #      nn.Linear(self.proj_out, self.pred_hid),
+            #     nn.BatchNorm1d(self.pred_hid),
+            #     nn.ReLU(),
+            #     nn.Linear(self.pred_hid, self.pred_out),
+            # )
         #@wjc
 
         #    self.projection_head = nn.Sequential(
@@ -220,6 +223,19 @@ class MuZeroNet(BaseMuZeroNet):
             return self._representation(obs_history)
         else:
             state = self._representation(obs_history)
+            min_state = state.view(-1, state.shape[1]).min(1, keepdim=True)[0]
+            max_state = state.view(-1, state.shape[1]).max(1, keepdim=True)[0]
+            scale_state = max_state - min_state
+            scale_state[scale_state < 1e-5] += 1e-5
+            state_normalize = (state - min_state) / scale_state
+            return state_normalize
+    
+    def baby_representation(self, obs_history):
+        print("baby representation net: ",obs_history.shape)
+        if not self.state_norm:
+            return self._baby_representation(obs_history)
+        else:
+            state = self._baby_representation(obs_history)
             min_state = state.view(-1, state.shape[1]).min(1, keepdim=True)[0]
             max_state = state.view(-1, state.shape[1]).max(1, keepdim=True)[0]
             scale_state = max_state - min_state
