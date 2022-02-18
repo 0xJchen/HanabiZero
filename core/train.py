@@ -390,7 +390,7 @@ class DataWorker(object):
                 init_legal_action=[]
                 for env in envs:
                     # print(env.reset())
-                    o,a=env.reset()
+                    o,local_o,a=env.reset()
 
                     init_obses.append(o)
                     #print("rest game: init actions=",a,flush=True)
@@ -514,7 +514,7 @@ class DataWorker(object):
 
                             envs[i].close()
                             #@wjc
-                            init_obs, init_legal_actions = envs[i].reset()
+                            init_obs,local_init_obs, init_legal_actions = envs[i].reset()
                             game_histories[i] = GameHistory(env.env.action_space, max_length=self.config.history_length,
                                                             config=self.config)
                             last_game_histories[i] = None
