@@ -169,7 +169,7 @@ if __name__ == '__main__':
             else:
                 model_path = None
         elif args.opr == 'test':
-            assert args.load_model
+            #assert args.load_model
             if args.model_path is None:
                 model_path = muzero_config.model_path
             else:
@@ -177,8 +177,9 @@ if __name__ == '__main__':
                 model_path = args.model_path
             parent_model_path=model_path
             test_range=[1] if (args.test_start==1) else np.arange(args.test_start,args.test_end)
-            for idx in test_range:
-                model_path=parent_model_path+"/model_"+str(int(idx*10000))+".p"
+            for idx in [1]:
+                #model_path=parent_model_path+"/model_"+str(int(idx*10000))+".p"
+                model_path='./model_250000.p'
                 assert os.path.exists(model_path), 'model not found at {}'.format(model_path)
 
                 model = muzero_config.get_uniform_network().to('cuda')
