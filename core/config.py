@@ -201,7 +201,7 @@ class BaseMuZeroConfig(object):
         sign = torch.ones(x.shape).float().to(x.device)
         sign[x < 0] = -1.0
         output = sign * (torch.sqrt(torch.abs(x / delta) +
-                         1) - 1 + epsilon * x / delta)
+                         1) - 1) + epsilon * x / delta
         return output
 
     def inverse_reward_transform(self, reward_logits):
