@@ -102,7 +102,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
 
                 dones[i] = done
                 if dones[i]:
-                    ep_final_rewards[i] = ori_reward
+                    ep_final_rewards[i] = info.item()['score']
                 if not dones[i]:
                     ep_ori_rewards[i] += ori_reward
                     ep_clip_rewards[i] += clip_reward
@@ -110,4 +110,4 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
             step += 1
 
         env.close()
-    return ep_ori_rewards, save_path
+    return ep_final_rewards, save_path
