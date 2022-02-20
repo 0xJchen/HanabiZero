@@ -24,8 +24,8 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
     test_episodes=100
     model.to(device)
     model.eval()
-    
-    
+
+
     # torch.set_printoptions(profile='full')
     # mock_next_state=torch.load('/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/72/next_state_41')
     # mock_next_state=mock_next_state.to(device)
@@ -133,7 +133,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
                 dones[i] = done
                 if dones[i]:
                     #print("done in one environment, final reward=",ori_reward)
-                    ep_final_rewards[i]=ori_reward
+                    ep_final_rewards[i]=info.item()['score']
                 if not dones[i]:
                     ep_ori_rewards[i] += ori_reward
                     ep_clip_rewards[i] += clip_reward
@@ -145,4 +145,4 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
 
     #    print(ep_final_rewards,ep_ori_rewards)
         env.close()
-    return ep_ori_rewards, save_path
+    return ep_final_rewards, save_path
