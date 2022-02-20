@@ -17,16 +17,16 @@ python3 ../main.py --env Hanabi-Full --case hanabi --opr train --seed 10 --num_g
   --revisit_policy_search_rate 0.999 \
   --amp_type 'torch_amp' \
   --reanalyze_part 'paper' \
-  --info 'decay_n_op_sgd' \
+  --info 'new_transform_sgd_decay_2p_per_200k' \
   --actors 40 \
   --simulations 50 \
   --batch_size 256 \
   --val_coeff 0.25 \
   --td_step 5 \
-  --debug_interval 100 \
+  --debug_interval 500 \
   --lr 0.1 \
-  --decay_rate 0.1 \
-  --decay_step 150000 \
+  --decay_rate 0.2 \
+  --decay_step 200000 \
   --stack 1 \
   #--debug_batch \
 
