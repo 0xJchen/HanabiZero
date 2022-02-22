@@ -21,7 +21,7 @@ from core.py_mcts import Node as py_Node
 
 def test(config, model, counter, test_episodes, device, render, save_video=False, final_test=False):
     #print("start testing!!!",flush=True)
-    test_episodes=100
+    test_episodes=800
     model.to(device)
     model.eval()
 
