@@ -217,31 +217,32 @@ class MuZeroNet(BaseMuZeroNet):
         value = self._prediction_value(state)
         return actor_logit, value
 
-    def representation(self, obs_history):
+    def representation(self, obs_history, mode='global'):
         # print("representation net: ",obs_history.shape)
-        if not self.state_norm:
-            return self._representation(obs_history)
+        if mode=='global':
+            if not self.state_norm:
+                return self._representation(obs_history)
+            else:
+                state = self._representation(obs_history)
+                min_state = state.view(-1, state.shape[1]).min(1, keepdim=True)[0]
+                max_state = state.view(-1, state.shape[1]).max(1, keepdim=True)[0]
+                scale_state = max_state - min_state
+                scale_state[scale_state < 1e-5] += 1e-5
+                state_normalize = (state - min_state) / scale_state
+                return state_normalize
+        elif mode=='local':
+            if not self.state_norm:
+                return self._baby_representation(obs_history)
+            else:
+                state = self._baby_representation(obs_history)
+                min_state = state.view(-1, state.shape[1]).min(1, keepdim=True)[0]
+                max_state = state.view(-1, state.shape[1]).max(1, keepdim=True)[0]
+                scale_state = max_state - min_state
+                scale_state[scale_state < 1e-5] += 1e-5
+                state_normalize = (state - min_state) / scale_state
+                return state_normalize
         else:
-            state = self._representation(obs_history)
-            min_state = state.view(-1, state.shape[1]).min(1, keepdim=True)[0]
-            max_state = state.view(-1, state.shape[1]).max(1, keepdim=True)[0]
-            scale_state = max_state - min_state
-            scale_state[scale_state < 1e-5] += 1e-5
-            state_normalize = (state - min_state) / scale_state
-            return state_normalize
-    
-    def baby_representation(self, obs_history):
-        print("baby representation net: ",obs_history.shape)
-        if not self.state_norm:
-            return self._baby_representation(obs_history)
-        else:
-            state = self._baby_representation(obs_history)
-            min_state = state.view(-1, state.shape[1]).min(1, keepdim=True)[0]
-            max_state = state.view(-1, state.shape[1]).max(1, keepdim=True)[0]
-            scale_state = max_state - min_state
-            scale_state[scale_state < 1e-5] += 1e-5
-            state_normalize = (state - min_state) / scale_state
-            return state_normalize
+            assert False
 
     def dynamics(self, state, action):
         assert len(state.shape) == 2

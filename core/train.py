@@ -387,12 +387,14 @@ class DataWorker(object):
                 # init_obses = [env.reset() for env in envs]
                 #@wjc
                 init_obses=[]
+                local_init_obses=[]
                 init_legal_action=[]
                 for env in envs:
                     # print(env.reset())
                     o,local_o,a=env.reset()
 
                     init_obses.append(o)
+                    local_init_obs.append(local_o)
                     #print("rest game: init actions=",a,flush=True)
                     init_legal_action.append(a)
 
@@ -406,10 +408,11 @@ class DataWorker(object):
 
                 # stack observation windows in boundary: s198, s199, s200, current s1 -> for not init trajectory
                 stack_obs_windows = [[] for _ in range(env_nums)]
-
+                local_stack_obs_windows = [[] for _ in range(env_nums)]
                 for i in range(env_nums):
                     stack_obs_windows[i] = [init_obses[i] for _ in range(self.config.stacked_observations)]
-                    game_histories[i].init(stack_obs_windows[i],init_legal_action[i])
+                    local_stack_obs_windows[i] = [local_init_obses[i] for _ in range(self.config.stacked_observations)]
+                    game_histories[i].init(stack_obs_windows[i],local_stack_obs_windows,init_legal_action[i])
                     #print("after init: ",game_histories[i].legal_actions,flush=True)
                 # this the root value of MCTS
                 search_values_lst = [[] for _ in range(env_nums)]
@@ -520,9 +523,10 @@ class DataWorker(object):
                             last_game_histories[i] = None
                             last_game_priorities[i] = None
                             stack_obs_windows[i] = [init_obs for _ in range(self.config.stacked_observations)]
+                            local_stack_obs_windows[i] = [local_init_obs for _ in range(self.config.stacked_observations)]
                             #@wjc
                             stack_legal_actions[i] = init_legal_actions
-                            game_histories[i].init(stack_obs_windows[i],stack_legal_actions[i])
+                            game_histories[i].init(stack_obs_windows[i],local_stack_obs_windows[i],stack_legal_actions[i])
 
                             self_play_rewards_max = max(self_play_rewards_max, eps_reward_lst[i])
                             self_play_moves_max = max(self_play_moves_max, eps_steps_lst[i])
@@ -540,6 +544,7 @@ class DataWorker(object):
                             eps_ori_reward_lst[i] = 0
                             visit_entropies_lst[i] = 0
 
+                    #by default, datawork uses gloval-obs for experience collection
                     stack_obs = [game_history.step_obs() for game_history in game_histories]
                     if self.config.image_based:
                         stack_obs = prepare_observation_lst(stack_obs)
@@ -597,7 +602,7 @@ class DataWorker(object):
                             clip_reward = ori_reward
 
                         game_histories[i].store_search_stats(distributions, value)
-                        game_histories[i].append(action, obs, clip_reward, legal_action)
+                        game_histories[i].append(action, obs, local_obs, clip_reward, legal_action)
 
                         eps_reward_lst[i] += clip_reward
                         eps_ori_reward_lst[i] += ori_reward
@@ -619,7 +624,9 @@ class DataWorker(object):
                         #     print(len(obss))
 
                         del stack_obs_windows[i][0]
+                        del local_stack_obs_windows[i][0]
                         stack_obs_windows[i].append(obs)
+                        local_stack_obs_windows[i].append(local_obs)
                         #@wjc
                         #now stack_legal_actions' input is numpy array
                         # del stack_legal_actions[i][0]
@@ -709,7 +716,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     total_transitions=0
 
     inputs_batch, targets_batch = batch
-    obs_batch_ori, baby_obs_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time = inputs_batch
+    obs_batch_ori, local_obs_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time = inputs_batch
     target_reward, target_value, target_policy = targets_batch
 
     #================
@@ -723,6 +730,7 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
 
     # [:, 0: config.stacked_observations * 3,:,:]
     if config.image_based:
+        assert False
         obs_batch_ori = torch.from_numpy(obs_batch_ori).to(config.device).float() / 255.0
         obs_batch = obs_batch_ori[:, 0: config.stacked_observations * config.image_channel, :, :]
         obs_target_batch = obs_batch_ori[:, config.image_channel:, :, :]
@@ -731,7 +739,12 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
         obs_batch = obs_batch_ori[:, 0: config.stacked_observations * config.image_channel, :]
         obs_target_batch = obs_batch_ori[:, config.image_channel:, :]
 
+        local_obs_batch_ori = torch.from_numpy(local_obs_batch_ori).to(config.device).float()
+        local_obs_batch = local_obs_batch_ori[:, 0: config.stacked_observations * config.image_channel, :]
+        local_obs_target_batch = local_obs_batch_ori[:, config.image_channel:, :] 
+
     if config.use_augmentation:
+        assert False
         # TODO: use different augmentation in target observations respectively
         obs_batch = config.transform(obs_batch)
         obs_target_batch = config.transform(obs_target_batch)
@@ -781,9 +794,11 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     with autocast():
         # print("start learner inference",obs_batch.shape,obs_batch.reshape(batch_size, -1).shape,flush=True)
         value, _, policy_logits, hidden_state = model.initial_inference(obs_batch.reshape(batch_size, -1))
-        baby_value, _, baby_policy_logits, baby_hidden_state = model.baby_initial_inference(baby_obs_batch.reshape(batch_size, -1))
+        local_value, _, local_policy_logits, local_hidden_state = model.initial_inference(local_obs_batch.reshape(batch_size, -1),mode='local')
     #print("====>in train,",type(value),flush=True)
     scaled_value = config.inverse_value_transform(value)
+
+
     if vis_result:
         state_lst = hidden_state.detach().cpu().numpy()
 
@@ -808,6 +823,8 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     with autocast():
         for step_i in range(config.num_unroll_steps):
             value, reward, policy_logits, hidden_state = model.recurrent_inference(hidden_state, action_batch[:, step_i])
+            with torch.no_grad():
+                local_value, local_reward, local_policy_logits, local_hidden_state = model.recurrent_inference(local_hidden_state, action_batch[:, step_i])
 
 
             policy_loss += -(torch.log_softmax(policy_logits, dim=1) * target_policy[:, step_i + 1]).sum(1)

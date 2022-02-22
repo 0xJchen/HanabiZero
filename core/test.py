@@ -65,7 +65,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
         init_obses=[]
         init_legal_actions=[]
         for env in envs:
-            o,l_a=env.reset()
+            o,local_o,l_a=env.reset()
             init_obses.append(o)
             init_legal_actions.append(l_a)
 

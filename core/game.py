@@ -1,3 +1,4 @@
+from re import L
 from typing import List
 from .utils import retype_observation, prepare_observation, prepare_observation_lst, str_to_arr
 from core.mcts import MCTS
@@ -71,12 +72,13 @@ class GameHistory:
         self.legal_actions = []
         self.ks=['visits', 'root', 'actions', 'obs', 'reward', 'tar_v', 'tar_r', 'tar_p']
 
-    def init(self, init_observations, init_legal_action):
+    def init(self, init_observations, local_init_observations,init_legal_action):
         self.child_visits = []
         self.root_values = []
 
         self.actions = []
         self.obs_history = []
+        self.local_obs_history = []
         self.rewards = []
         self.target_values = []
         self.target_rewards = []
@@ -89,6 +91,8 @@ class GameHistory:
         #print("len of init",len(init_observations),flush=True)
         for observation in init_observations:
             self.obs_history.append(copy.deepcopy(observation))
+        for local_obs in local_init_observations:
+            self.local_obs_history.append(copy.deepcopy(local_obs))
 
         #@wjc
         self.legal_actions.append(init_legal_action)
@@ -160,10 +164,11 @@ class GameHistory:
         'tar_r':np.array(self.target_rewards), 'tar_p':np.array(self.target_policies), 'la':np.array(self.legal_actions) }
         
 
-    def append(self, action, obs, reward, legal_action):
+    def append(self, action, obs,local_obs, reward, legal_action):
         self.actions.append(action)
         self.obs_history.append(obs)
         self.rewards.append(reward)
+        self.local_obs_history.append(local_obs)
 
         #@wjc
         #print("***before",self.legal_actions,flush=True)
@@ -172,8 +177,12 @@ class GameHistory:
     def obs_object(self):
         return self.obs_history
 
-    def obs(self, i, extra_len=0, padding=False):
-        frames = ray.get(self.obs_history)[i:i + self.stacked_observations + extra_len]#@wjc
+    def obs(self, i, extra_len=0, padding=False, mode='global'):
+        if mode=='global':
+            frames = ray.get(self.obs_history)[i:i + self.stacked_observations + extra_len]#@wjc
+        else:
+            assert mode=='local'
+            frame = ray.get(self.local_obs_history[i:i+self.stacked_observations+extra_len])
         #frames = self.obs_history[i:i + self.stacked_observations + extra_len]
         if padding:
             pad_len = self.stacked_observations + extra_len - len(frames)
@@ -192,9 +201,13 @@ class GameHistory:
         else:
             return [np.zeros(self.config.obs_shape // self.stacked_observations) for _ in range(self.stacked_observations)]
 
-    def step_obs(self):
+    def step_obs(self,mode='global'):
         index = len(self.rewards)
-        frames = self.obs_history[index:index + self.stacked_observations]
+        if mode=='global':
+            frames = self.obs_history[index:index + self.stacked_observations]
+        else:
+            assert mode=='local'
+            frames= self.local_obs_history[index:index+self.stacked_observations]
         if self.config.cvt_string:
             frames = [str_to_arr(obs, self.config.gray_scale) for obs in frames]
         return frames

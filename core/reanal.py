@@ -150,7 +150,7 @@ class BatchWorker_CPU(object):
         # obtain the batch context from replay buffer
         game_lst, game_pos_lst, indices_lst, weights_lst, make_time_lst = batch_context
         batch_size = len(indices_lst)
-        obs_lst, action_lst, mask_lst = [], [], []
+        obs_lst, local_obs_lst, action_lst, mask_lst = [], [], [], []
         # prepare the inputs of a batch
         for i in range(batch_size):
             game = game_lst[i]
@@ -162,15 +162,17 @@ class BatchWorker_CPU(object):
             _actions += [np.random.randint(0, game.action_space_size) for _ in range(self.config.num_unroll_steps - len(_actions))]
 
             obs_lst.append(game_lst[i].obs(game_pos_lst[i], extra_len=self.config.num_unroll_steps, padding=True))
-          
+            local_obs_lst.append(game_lst[i].obs(game_pos_lst[i], extra_len=self.config.num_unroll_steps, padding=True,mode='local'))
+
             action_lst.append(_actions)
             mask_lst.append(_mask)
 
         re_num = int(batch_size * ratio)
         # formalize the input observations
         obs_lst = prepare_observation_lst(obs_lst,image_based=False)
+        local_obs_lst = prepare_observation_lst(local_obs_lst,image_based=False)
         # formalize the inputs of a batch
-        inputs_batch = [obs_lst, action_lst, mask_lst, indices_lst, weights_lst, make_time_lst]
+        inputs_batch = [obs_lst, local_obs_lst, action_lst, mask_lst, indices_lst, weights_lst, make_time_lst]
         for i in range(len(inputs_batch)):
             inputs_batch[i] = np.asarray(inputs_batch[i])
 
