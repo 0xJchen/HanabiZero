@@ -482,7 +482,7 @@ class HanabiEnv(Environment):
     infos = {'score':self.state.score()}
     # print("obs shape: ", len(share_obs[0]),len(obs),flush=True)
     return share_obs[0], rewards, done, infos, list(available_actions)
-   # return obs, rewards, done, infos, list(available_actions)
+    #return obs, rewards, done, infos, list(available_actions)
   def _make_observation_all_players(self):
     """Make observation for all players.
 

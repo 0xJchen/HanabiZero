@@ -177,7 +177,8 @@ if __name__ == '__main__':
                 model_path = args.model_path
             parent_model_path=model_path
             test_range=[1] if (args.test_start==1) else np.arange(args.test_start,args.test_end)
-            test_range=[i for i in range(101,130)]
+            #test_range=[107,108,75,76]
+            test_range=[107,76]
             for idx in test_range:
                 model_path=parent_model_path+"/model_"+str(int(idx*10000))+".p"
                 assert os.path.exists(model_path), 'model not found at {}'.format(model_path)

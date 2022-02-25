@@ -3,7 +3,7 @@ from unittest import mock
 
 import torch
 import numpy as np
-
+import time
 from .mcts import MCTS
 import core.ctree.cytree as cytree
 from .utils import select_action, prepare_observation_lst, set_seed
@@ -21,10 +21,10 @@ from core.py_mcts import Node as py_Node
 
 def test(config, model, counter, test_episodes, device, render, save_video=False, final_test=False):
     #print("start testing!!!",flush=True)
-    test_episodes=800
+    test_episodes=1000
     model.to(device)
     model.eval()
-
+    s_t=time.time()
 
     # torch.set_printoptions(profile='full')
     # mock_next_state=torch.load('/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/72/next_state_41')
@@ -111,7 +111,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
 
             roots_distributions = roots.get_distributions()
             roots_values = roots.get_values()
-            # print('===>[test]---step {}---'.format(step),flush=True)
+            print('[test] step {}'.format(step),flush=True)
             for i in range(test_episodes):
                 if dones[i]:
                     #print("===>I finished testing!",flush=True)
@@ -145,4 +145,5 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
 
     #    print(ep_final_rewards,ep_ori_rewards)
         env.close()
+    print("finish in {}s".format(time.time()-s_t),flush=True)
     return ep_final_rewards, save_path

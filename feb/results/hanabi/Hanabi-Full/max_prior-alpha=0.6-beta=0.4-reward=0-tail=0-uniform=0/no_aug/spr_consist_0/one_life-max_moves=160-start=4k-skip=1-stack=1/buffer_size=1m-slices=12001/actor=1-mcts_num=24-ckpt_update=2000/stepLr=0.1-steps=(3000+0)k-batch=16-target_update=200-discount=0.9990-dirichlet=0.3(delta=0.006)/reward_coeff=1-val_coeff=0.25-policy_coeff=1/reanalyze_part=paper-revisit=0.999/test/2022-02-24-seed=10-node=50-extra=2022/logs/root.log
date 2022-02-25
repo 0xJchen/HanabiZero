@@ -1,0 +1,37 @@
+[2022-02-24 03:32:39,903][root][ERROR][main.py><module>] ==> Error(s) in loading state_dict for MuZeroNetFull:
+	size mismatch for _representation.0.weight: copying a param with shape torch.Size([512, 785]) from checkpoint, the shape in current model is torch.Size([512, 660]).
+Traceback (most recent call last):
+  File "../main.py", line 193, in <module>
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cuda')))
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1051, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for MuZeroNetFull:
+	size mismatch for _representation.0.weight: copying a param with shape torch.Size([512, 785]) from checkpoint, the shape in current model is torch.Size([512, 660]).
+[2022-02-24 03:33:05,709][root][ERROR][main.py><module>] ==> Error(s) in loading state_dict for MuZeroNetFull:
+	size mismatch for _representation.0.weight: copying a param with shape torch.Size([512, 785]) from checkpoint, the shape in current model is torch.Size([512, 660]).
+Traceback (most recent call last):
+  File "../main.py", line 193, in <module>
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cuda')))
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1051, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for MuZeroNetFull:
+	size mismatch for _representation.0.weight: copying a param with shape torch.Size([512, 785]) from checkpoint, the shape in current model is torch.Size([512, 660]).
+[2022-02-24 03:33:23,029][root][ERROR][main.py><module>] ==> Error(s) in loading state_dict for MuZeroNetFull:
+	size mismatch for _representation.0.weight: copying a param with shape torch.Size([512, 785]) from checkpoint, the shape in current model is torch.Size([512, 660]).
+Traceback (most recent call last):
+  File "../main.py", line 193, in <module>
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cuda')))
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1051, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for MuZeroNetFull:
+	size mismatch for _representation.0.weight: copying a param with shape torch.Size([512, 785]) from checkpoint, the shape in current model is torch.Size([512, 660]).
+[2022-02-24 03:39:03,369][root][ERROR][main.py><module>] ==> name 'summary_writer' is not defined
+Traceback (most recent call last):
+  File "../main.py", line 200, in <module>
+    model, weights = test_mcts(muzero_config, summary_writer, model_path)
+NameError: name 'summary_writer' is not defined
+[2022-02-24 05:42:07,174][root][ERROR][main.py><module>] ==> name 'summary_writer' is not defined
+Traceback (most recent call last):
+  File "../main.py", line 200, in <module>
+    model, weights = test_mcts(muzero_config, summary_writer, model_path)
+NameError: name 'summary_writer' is not defined

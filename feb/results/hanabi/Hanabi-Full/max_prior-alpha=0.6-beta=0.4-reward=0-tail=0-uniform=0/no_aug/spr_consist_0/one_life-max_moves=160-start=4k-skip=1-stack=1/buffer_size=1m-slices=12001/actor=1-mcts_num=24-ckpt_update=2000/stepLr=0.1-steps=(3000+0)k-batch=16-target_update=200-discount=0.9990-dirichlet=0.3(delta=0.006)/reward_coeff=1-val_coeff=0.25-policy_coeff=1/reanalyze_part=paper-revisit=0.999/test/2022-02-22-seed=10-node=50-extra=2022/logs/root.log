@@ -3,3 +3,18 @@ Traceback (most recent call last):
   File "../main.py", line 183, in <module>
     assert os.path.exists(model_path), 'model not found at {}'.format(model_path)
 AssertionError: model not found at ./model/model/model_1010000.p
+[2022-02-22 02:22:37,539][root][ERROR][main.py><module>] ==> name 'summary_writer' is not defined
+Traceback (most recent call last):
+  File "../main.py", line 199, in <module>
+    model, weights = test_mcts(muzero_config, summary_writer, model_path)
+NameError: name 'summary_writer' is not defined
+[2022-02-22 02:48:36,944][root][ERROR][main.py><module>] ==> name 'summary_writer' is not defined
+Traceback (most recent call last):
+  File "../main.py", line 199, in <module>
+    model, weights = test_mcts(muzero_config, summary_writer, model_path)
+NameError: name 'summary_writer' is not defined
+[2022-02-22 07:26:22,450][root][ERROR][main.py><module>] ==> name 'summary_writer' is not defined
+Traceback (most recent call last):
+  File "../main.py", line 200, in <module>
+    model, weights = test_mcts(muzero_config, summary_writer, model_path)
+NameError: name 'summary_writer' is not defined
