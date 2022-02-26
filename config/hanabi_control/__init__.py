@@ -188,7 +188,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             lr_decay_rate=args.decay_rate,
             lr_decay_steps=args.decay_step,#changed from 0.5m
             # replay window
-            start_window_size=40,#@wjc mannualy changed to 10(final model) for debugging
+            start_window_size=80,#@wjc mannualy changed to 10(final model) for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation

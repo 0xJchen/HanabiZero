@@ -260,25 +260,17 @@ class MuZeroNetFull(BaseMuZeroNet):
         self.state_norm = state_norm
         self.action_space_n = action_space_n
         self.feature_size = 512
-        # self.init_size= 1024
+        self.init_size= 1024
         # self.actor_hidden = 128
         self.hidden_size = 256
         # self.hidden_sec = 128
         #print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
-       # self._representation = nn.Sequential(nn.Linear(input_size, self.init_size),
-       #                                      nn.BatchNorm1d(self.init_size),
-       #                                      nn.ReLU(),
-       #                                      nn.Linear(self.init_size, self.feature_size),
-       #                                      nn.BatchNorm1d(self.feature_size),
-       #                                      nn.ReLU(),
-       #                                      nn.Linear(self.feature_size, self.feature_size),
-       #                                      nn.BatchNorm1d(self.feature_size),
-       #                                      nn.ReLU()
-       #                                      )
-        #self._representation = nn.Sequential(nn.Linear(input_size,self.init_size),nn.BatchNorm1d(self.init_size),nn.ReLU(),\
-        #                                     nn.Linear(self.init_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),\
-        #                                     ResMLP(self.feature_size))
-        self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),NewResMLP(self.feature_size))
+
+        #test-partial-stack-net
+        self._representation = nn.Sequential(nn.Linear(input_size,self.init_size),nn.BatchNorm1d(self.init_size),nn.ReLU(),NewResMLP(self.init_size),nn.Linear(self.init_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),NewResMLP(self.feature_size))
+
+        #best repr model
+        #self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),NewResMLP(self.feature_size))
         self._dynamics_state = NewDynamicNet(self.feature_size, action_space_n)
         self._dynamics_reward = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
                                               nn.BatchNorm1d(self.hidden_size),

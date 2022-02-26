@@ -1024,7 +1024,7 @@ class BatchStorage(object):
             self.batch_queue.put(batch)
         else:
             pass
-            # print(self.name+"full",flush=True)
+            #print(self.name+"full",flush=True)
 
     def pop(self):
         if self.batch_queue.qsize() > 0:
@@ -1247,7 +1247,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
 
     # wait for all replay buffer to be non-empty
     last=0
-    mv=3
+    mv=2
     while not (ray.get(replay_buffer.get_total_len.remote()) >= config.start_window_size):
         cur=ray.get(replay_buffer.get_total_len.remote())
         print("waiting in _train,buffer size ={} /{}, speed={:.1f}".format(cur,config.start_window_size,(cur-last)/mv),flush=True)

@@ -111,7 +111,7 @@ def test(config, model, counter, test_episodes, device, render, save_video=False
 
             roots_distributions = roots.get_distributions()
             roots_values = roots.get_values()
-            print('[test] step {}'.format(step),flush=True)
+#            print('[test] step {}'.format(step),flush=True)
             for i in range(test_episodes):
                 if dones[i]:
                     #print("===>I finished testing!",flush=True)
