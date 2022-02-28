@@ -997,10 +997,10 @@ def adjust_lr(config, optimizer, step_count, scheduler):
         else:
 
             tmp_lr = config.lr_init * config.lr_decay_rate ** ((step_count - config.lr_warm_step) // config.lr_decay_steps)
-            if tmp_lr >= 0.0001:
+            if tmp_lr >= 0.00001:
                 lr=tmp_lr
             else:
-                lr=0.0001
+                lr=0.00001
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
 
