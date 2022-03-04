@@ -997,10 +997,10 @@ def adjust_lr(config, optimizer, step_count, scheduler):
         else:
 
             tmp_lr = config.lr_init * config.lr_decay_rate ** ((step_count - config.lr_warm_step) // config.lr_decay_steps)
-            if tmp_lr >= 0.00001:
+            if tmp_lr >= 0.0001:
                 lr=tmp_lr
             else:
-                lr=0.00001
+                lr=0.0001
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
 
@@ -1218,10 +1218,21 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     target_model.eval()
     latest_model.eval()
 
+    #restart
+    #pf='/home/game/partial/1000000/'
+    #md_path=pf+'model_980000.p'
+    #op_path=pf+'op.pt'
+    #assert os.path.exists(md_path)
+    #assert os.path.exists(op_path)
+    #model.load_state_dict(torch.load(md_path))
+    #print("finish loading model")
     optimizer = optim.SGD(model.parameters(), lr=config.lr_init, momentum=config.momentum,
                            weight_decay=config.weight_decay)
 
-    print("using RMSprop OPTIM={}".format(config.rmsprop!=0),flush=True)
+    #optimizer.load_state_dict(torch.load(op_path))
+    #print("finish loading optimizer")
+
+    #print("using RMSprop OPTIM={}".format(config.rmsprop!=0),flush=True)
     # if config.rmsprop!=0:
     #     optimizer = optim.RMSprop(model.parameters(), lr=config.lr_init, momentum=config.momentum,
     #                       weight_decay=config.weight_decay)
@@ -1262,7 +1273,10 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     make_time = 0.
     lr = 0.
 
+    #loading model for restart
     recent_weights = model.get_weights()
+    # model
+
     time_100k=time.time()
     _interval=config.debug_interval
     _debug_batch=config.debug_batch
@@ -1375,7 +1389,14 @@ def _test(config, shared_storage):
 
 def train(config, summary_writer=None, model_path=None):
     model = config.get_uniform_network()
+    # from pytorch_model_summary import summary
+    # print(summary(model))
+    pytorch_total_params = sum(p.numel() for p in model.parameters())
+    print(pytorch_total_params)
+    model.num_params()
+    # assert False
     target_model = config.get_uniform_network()
+
     latest_model = config.get_uniform_network()
     #assert model_path is not None
     if model_path:
@@ -1393,10 +1414,10 @@ def train(config, summary_writer=None, model_path=None):
 
     replay_buffer = ReplayBuffer.remote(replay_buffer_id=0, config=config)
 
-    # replay_buffer.load_files.remote('foo')
-    # print("====>finish loading replay buffer")
-    time.sleep(5)
+    #replay_buffer.load_files.remote('foo')
+    #print("====>finish loading replay buffer")
 
+    #time.sleep(5)
     workers=[]
     # reanalyze workers
     cpu_workers = [BatchWorker_CPU.remote(idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.cpu_actor)]
@@ -1404,7 +1425,8 @@ def train(config, summary_writer=None, model_path=None):
     gpu_workers = [BatchWorker_GPU.remote(idx, replay_buffer, storage, batch_storage, mcts_storage, config) for idx in range(config.gpu_actor)]
     workers += [gpu_worker.run.remote() for gpu_worker in gpu_workers]
 
-
+    # time.sleep(100)
+    # assert False
     # self-play
     #num_actors=2
     data_workers = [DataWorker.remote(rank, config, storage, replay_buffer) for rank in range(config.num_actors)] #changed to 1 actor
@@ -1424,7 +1446,7 @@ def train(config, summary_writer=None, model_path=None):
     # test
     workers += [_test.remote(config, storage)]
     # train
-    final_weights = _train(model, target_model, latest_model, config, storage, replay_buffer, batch_storage, summary_writer, [200000, 400000,1000000])
+    final_weights = _train(model, target_model, latest_model, config, storage, replay_buffer, batch_storage, summary_writer, [300000, 700000,1000000])
     # wait all
     ray.wait(workers)
 

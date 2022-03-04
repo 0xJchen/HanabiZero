@@ -1,0 +1,4 @@
+[2022-03-03 14:07:55,352][train_test][INFO][train.py>_log] ==> #1000       Test Mean Score: 0.0       (Max: 0         )
+[2022-03-03 14:18:53,262][train_test][INFO][train.py>_log] ==> #4000       Test Mean Score: 0.0       (Max: 0         )
+[2022-03-03 14:29:47,880][train_test][INFO][train.py>_log] ==> #7000       Test Mean Score: 0.0       (Max: 0         )
+[2022-03-03 14:42:54,344][train_test][INFO][train.py>_log] ==> #10000      Test Mean Score: 0.0       (Max: 0         )

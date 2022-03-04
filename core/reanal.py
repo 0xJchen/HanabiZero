@@ -29,7 +29,7 @@ try:
 except:
     pass
 
-gpu_num=0.06
+gpu_num=0.07
 
 
 @ray.remote
@@ -64,7 +64,7 @@ class BatchWorker_CPU(object):
 
             # # off-policy correction: shorter horizon of td steps
             # delta_td = (total_transitions - idx) // config.auto_td_steps
-            
+
             # td_steps = np.clip(td_steps, 1, 5).astype(np.int)
 
             # prepare the corresponding observations for bootstrapped values o_{t+k}
@@ -162,7 +162,7 @@ class BatchWorker_CPU(object):
             _actions += [np.random.randint(0, game.action_space_size) for _ in range(self.config.num_unroll_steps - len(_actions))]
 
             obs_lst.append(game_lst[i].obs(game_pos_lst[i], extra_len=self.config.num_unroll_steps, padding=True))
-          
+
             action_lst.append(_actions)
             mask_lst.append(_mask)
 
@@ -254,7 +254,7 @@ class BatchWorker_GPU(object):
         self.last_model_index = 0
 
     def _prepare_reward_value(self, reward_value_context):
-        
+
         value_obs_lst, value_mask, state_index_lst, rewards_lst, traj_lens = reward_value_context
         value_obs_lst = ray.get(value_obs_lst)
         device = self.config.device
@@ -300,7 +300,7 @@ class BatchWorker_GPU(object):
                             # print("value_lst={},reward_lst={},disc={},i={},idx={}".format(value_lst, reward,self.config.discount,i,value_index))
                         value_lst[value_index] += reward * self.config.discount ** i
                         # except:
-                            
+
                             # assert False
                     if current_index < traj_len_non_re:
                         target_values.append(value_lst[value_index])

@@ -81,7 +81,7 @@ class ReplayBuffer(object):
             path = self.config.exp_path
         
         dir = os.path.join(path, 'replay', str(self.replay_buffer_id))
-        dir='/home/game/jan/buffer'
+        dir='/home/game/partial/1000000'
         print('Loading from ', dir, ' ...')
         assert os.path.exists(dir)
 

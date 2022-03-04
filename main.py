@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     if args.opr == 'train':
         ray.init(num_gpus=args.num_gpus, num_cpus=args.num_cpus,
-              object_store_memory=20*1024*1024*1024,dashboard_port=8265, dashboard_host='0.0.0.0')
+              object_store_memory=150*1024*1024*1024,dashboard_port=8265, dashboard_host='0.0.0.0')
                 #   object_store_memory=200*1024*1024*1024, dashboard_port=9999,dashboard_host='0.0.0.0'  )
 		#object_store_memory=150 * 1024 * 1024 * 1024)
     else:

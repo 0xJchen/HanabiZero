@@ -152,7 +152,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
 class HanabiControlConfigFull(BaseMuZeroConfig):
     def __init__(self,args):
         super(HanabiControlConfigFull, self).__init__(
-            training_steps=3000000,
+            training_steps=2000000,
             last_steps=100,
             test_interval=3000,#changed to 1000
             log_interval=1000,
@@ -182,7 +182,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.0001,#changed from 0.002 @jc, this is fraction of warm up steps
+            lr_warm_up=0.001,#changed from 0.002 @jc, this is fraction of warm up steps
             lr_type='step',
             lr_init=args.lr,
             lr_decay_rate=args.decay_rate,
@@ -207,7 +207,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             value_support=DiscreteSupport(-100, 100, delta=1),
             reward_support=DiscreteSupport(-100, 100, delta=1),
             rmsprop=args.rmsprop,
-            )#@wjc what?
+            )
 
         self.discount **= self.frame_skip
         # self.max_moves //= self.frame_skip#@wjc max move should just be 80
