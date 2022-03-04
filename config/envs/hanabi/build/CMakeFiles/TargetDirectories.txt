@@ -1,7 +1,0 @@
-/home/game/envs/hanabi/build/CMakeFiles/rebuild_cache.dir
-/home/game/envs/hanabi/build/CMakeFiles/pyhanabi.dir
-/home/game/envs/hanabi/build/CMakeFiles/edit_cache.dir
-/home/game/envs/hanabi/build/CMakeFiles/game_example.dir
-/home/game/envs/hanabi/build/hanabi_lib/CMakeFiles/rebuild_cache.dir
-/home/game/envs/hanabi/build/hanabi_lib/CMakeFiles/hanabi.dir
-/home/game/envs/hanabi/build/hanabi_lib/CMakeFiles/edit_cache.dir
