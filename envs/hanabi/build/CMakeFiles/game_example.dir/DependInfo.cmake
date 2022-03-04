@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/examples/game_example.cc" "/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build/CMakeFiles/game_example.dir/examples/game_example.cc.o"
+  "/home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/examples/game_example.cc" "/home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build/CMakeFiles/game_example.dir/examples/game_example.cc.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
@@ -15,7 +15,7 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
-  "/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build/hanabi_lib/CMakeFiles/hanabi.dir/DependInfo.cmake"
+  "/home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build/hanabi_lib/CMakeFiles/hanabi.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

@@ -3,14 +3,12 @@ import torch
 from baselines.common.atari_wrappers import WarpFrame, EpisodicLifeEnv
 from core.config import BaseMuZeroConfig, DiscreteSupport
 from .env_wrapper import HanabiControlWrapper
-from .model import MuZeroNet, MuZeroNetFull
+from .model import MuZeroNet,MuZeroNetFull
 from core.utils import make_atari
 from envs import HanabiEnv
 import numpy as np
-
-
 class HanabiControlConfig(BaseMuZeroConfig):
-    def __init__(self, args):
+    def __init__(self,args):
         super(HanabiControlConfig, self).__init__(
             training_steps=200000,
             last_steps=0,
@@ -42,14 +40,14 @@ class HanabiControlConfig(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.01,
+            lr_warm_up=0.001,
             lr_type='step',
             lr_init=args.lr,
             lr_decay_rate=args.decay_rate,
             lr_decay_steps=20000,
             # replay window
-            start_window_size=10000,
-            window_size=125000,
+            start_window_size=20,
+            window_size=125000,#useless
             transition_num=1,
             # frame skip & stack observation
             frame_skip=1,
@@ -63,20 +61,17 @@ class HanabiControlConfig(BaseMuZeroConfig):
             policy_loss_coeff=1,
             # value reward support
             value_support=DiscreteSupport(-25, 25, delta=1),
-            reward_support=DiscreteSupport(-25, 25, delta=1),
-            optim=args.optim,
-            local_state=args.local_state
-            )
+            reward_support=DiscreteSupport(-25, 25, delta=1))
 
         self.discount **= self.frame_skip
-        self.const = args.const
+
+        self.const=args.const
         self.start_window_size = self.start_window_size * 100 // self.frame_skip
         self.start_window_size = max(1, self.start_window_size)
         self.image_channel = 1
-        self.game_name = None
 
     def visit_softmax_temperature_fn(self, num_moves, trained_steps):
-        assert self.change_temperature == False
+        assert self.change_temperature==False
         if self.change_temperature:
             if trained_steps < 0.5 * self.training_steps:
                 return 1.0
@@ -88,39 +83,38 @@ class HanabiControlConfig(BaseMuZeroConfig):
             return 1.0
 
     def set_game(self, env_name, save_video=False, save_path=None, video_callable=None):
-        print("==>setting env = ", env_name)
+        print("==>setting env = ",env_name)
         self.env_name = env_name
         game = self.new_game()
 
-        reset_obs, _ = game.reset()
-        reset_obs = np.asarray(reset_obs)
+        reset_obs,_=game.reset()
+        reset_obs=np.asarray(reset_obs)
         self.obs_shape = reset_obs.shape[0] * self.stacked_observations
         self.action_space_size = game.action_space_size
-        print("action space =", self.action_space_size, flush=True)
-
+        print("action space =",self.action_space_size,flush=True)
     def get_uniform_network(self):
 
-        if self.env_name == 'Hanabi-Small':
-            if self.const > 0:
+        if self.env_name=='Hanabi-Small':
+            if self.const>0:
                 return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
-                                 self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm, proj=True)
+                         self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm, proj=True)
             else:
                 return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
-                                 self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm)
+                         self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm)
 
         else:
             print("wrong env name in init network")
             assert False
 
+
     def new_game(self, seed=None, save_video=False, save_path=None, video_callable=None, uid=None, test=False, final_test=False):
 
         if seed is not None:
-            arg = {"hanabi_name": self.env_name, "seed": seed}
+            arg={"hanabi_name":self.env_name,"seed":seed}
         else:
-            arg = {"hanabi_name": self.env_name, "seed": None}
-        env = HanabiEnv(arg)
-
-        return HanabiControlWrapper(env, discount=self.discount, local_state=self.local_state)
+            arg={"hanabi_name":self.env_name,"seed":None}
+        env=HanabiEnv(arg)
+        return HanabiControlWrapper(env, discount=self.discount,mdp=self.mdp)
 
     def scalar_reward_loss(self, prediction, target):
         return -(torch.log_softmax(prediction, dim=1) * target).sum(1)
@@ -131,9 +125,8 @@ class HanabiControlConfig(BaseMuZeroConfig):
     def set_transforms(self):
         pass
 
-
 class HanabiControlConfigFull(BaseMuZeroConfig):
-    def __init__(self, args):
+    def __init__(self,args):
         super(HanabiControlConfigFull, self).__init__(
             training_steps=3000000,
             last_steps=100,
@@ -171,7 +164,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             lr_decay_rate=args.decay_rate,
             lr_decay_steps=args.decay_step,
             # replay window
-            start_window_size=40,
+            start_window_size=80,
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation
@@ -186,20 +179,18 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             policy_loss_coeff=1,
             debug_batch=args.debug_batch,
             debug_interval=args.debug_interval,
-            # value reward support
+        # value reward support
             value_support=DiscreteSupport(-100, 100, delta=1),
             reward_support=DiscreteSupport(-100, 100, delta=1),
-            optim=args.optim,
-            local_state=args.local_state
-        )
+            rmsprop=args.rmsprop,
+            )
 
         self.discount **= self.frame_skip
 
         self.start_window_size = self.start_window_size * 100 // self.frame_skip
         self.start_window_size = max(1, self.start_window_size)
         self.image_channel = 1
-        self.game_name = None
-
+        self.game_name=None
     def visit_softmax_temperature_fn(self, num_moves, trained_steps):
         if self.change_temperature:
             if trained_steps < 0.25 * self.training_steps:
@@ -212,33 +203,35 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             return 1.0
 
     def set_game(self, env_name, save_video=False, save_path=None, video_callable=None):
-        print("==>setting env = ", env_name)
+        print("==>setting env = ",env_name)
         self.env_name = env_name
         game = self.new_game()
 
-        reset_obs, _ = game.reset()
-        reset_obs = np.asarray(reset_obs)
+        reset_obs,_=game.reset()
+        reset_obs=np.asarray(reset_obs)
         self.obs_shape = reset_obs.shape[0] * self.stacked_observations
         self.action_space_size = game.action_space_size
 
     def get_uniform_network(self):
-
-        if self.env_name == 'Hanabi-Small':
+        if self.env_name=='Hanabi-Small':
             assert False
-        elif self.env_name == 'Hanabi-Full':
+            return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
+                         self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm)
+        elif self.env_name=='Hanabi-Full':
             return MuZeroNetFull(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
-                                 self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm)
+                         self.inverse_value_transform, self.inverse_reward_transform, state_norm=self.state_norm)
         else:
             print("wrong env name in init network")
             assert False
 
+        print("action space =",self.action_space_size,flush=True)
     def new_game(self, seed=None, save_video=False, save_path=None, video_callable=None, uid=None, test=False, final_test=False):
 
-        arg = {"hanabi_name": self.env_name, "seed": seed}
+        arg={"hanabi_name":self.env_name,"seed":seed}
 
-        env = HanabiEnv(arg)
+        env=HanabiEnv(arg)
 
-        return HanabiControlWrapper(env, discount=self.discount, local_state=self.local_state)
+        return HanabiControlWrapper(env, discount=self.discount,mdp=self.mdp)
 
     def scalar_reward_loss(self, prediction, target):
         return -(torch.log_softmax(prediction, dim=1) * target).sum(1)
@@ -248,3 +241,5 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
 
     def set_transforms(self):
         pass
+
+

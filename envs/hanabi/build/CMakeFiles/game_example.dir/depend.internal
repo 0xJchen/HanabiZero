@@ -11,4 +11,4 @@ CMakeFiles/game_example.dir/examples/game_example.cc.o
  ../hanabi_lib/hanabi_observation.h
  ../hanabi_lib/hanabi_state.h
  ../hanabi_lib/observation_encoder.h
- /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/examples/game_example.cc
+ /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/examples/game_example.cc

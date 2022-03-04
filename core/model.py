@@ -10,13 +10,11 @@ import torch.nn as nn
 class Action(object):
     pass
 
-
 class NetworkOutput(typing.NamedTuple):
     value: float
     reward: float
     policy_logits: Dict[Action, float]
     hidden_state: List[float]
-
 
 def concat_output_value(output_lst):
     # for numpy
@@ -27,7 +25,6 @@ def concat_output_value(output_lst):
     value_lst = np.concatenate(value_lst)
 
     return value_lst
-
 
 def concat_output(output_lst):
     # for numpy
@@ -73,14 +70,14 @@ class BaseMuZeroNet(nn.Module):
         num = obs.size(0)
         return NetworkOutput(value, [0. for _ in range(num)], actor_logit, state)
 
+
     def recurrent_inference(self, hidden_state, action) -> NetworkOutput:
         state, reward = self.dynamics(hidden_state, action)
         actor_logit, value = self.prediction(state)
 
         if not self.training:
             value = self.inverse_value_transform(value).detach().cpu().numpy()
-            reward = self.inverse_reward_transform(
-                reward).detach().cpu().numpy()
+            reward = self.inverse_reward_transform(reward).detach().cpu().numpy()
             state = state.detach().cpu().numpy()
             actor_logit = actor_logit.detach().cpu().numpy()
 

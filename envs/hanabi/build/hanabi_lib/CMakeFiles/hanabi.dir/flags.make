@@ -6,5 +6,5 @@ CXX_FLAGS = -O2 -std=c++11 -Wall -Wextra -fPIC -Wno-sign-compare
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/hanabi_lib 
+CXX_INCLUDES = -I/home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/hanabi_lib 
 

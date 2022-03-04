@@ -1,16 +1,11 @@
 import numpy as np
 import ray
-import torch
 import random
 import time
-import copy
-import math
 import os
 from tqdm import tqdm
-from ray.util.multiprocessing import Pool
 
 from .game import GameHistory
-from .utils import profile, prepare_observation_lst
 
 
 @ray.remote
@@ -41,43 +36,16 @@ class ReplayBuffer(object):
         self._eps_collected = 0
         self.base_idx = 0
         self._alpha = config.priority_prob_alpha
-        # @wjc, changed from 10**6 for testing
-        self.transition_top = int(config.transition_num * 100 * 10 ** 4)
+        self.transition_top = int(config.transition_num *100* 10 ** 4)#@wjc, changed from 10**6 for testing
+        print("transition top is {}".format(self.transition_top),flush=True)
         self.clear_time = 0
 
-    def random_init_trajectory(self, num):
-        env = self.config.new_game(self.config.seed)
-        obs_ori = env.reset()
-
-        def random_distribution(num, dim):
-            res = np.zeros(dim)
-            for i in range(num):
-                index = np.random.randint(0, dim)
-                res[index] += 1
-            return res
-
-        print('Fill random data into replay')
-        for _ in tqdm(range(num)):
-            game_history = GameHistory(
-                env.env.action_space, max_length=self.config.history_length, config=self.config)
-            game_history.init([obs_ori for _ in range(
-                self.config.stacked_observations)])
-
-            traj_len = self.config.history_length
-            distributions = np.ones((traj_len, self.config.action_space_size))
-            values = np.random.random(traj_len)
-            actions = np.zeros(traj_len, dtype=np.int)
-            priority = np.random.random(traj_len)
-            reward = 0
-            end_tag = True
-            for i in range(traj_len):
-                game_history.store_search_stats(distributions[i], values[i])
-                game_history.append(actions[i], obs_ori, reward)
-            game_history.game_over()
-            self.save_game(game_history, end_tag, priority)
-
     def load_files(self, path=None):
+        if path is None:
+            path = self.config.exp_path
 
+        dir = os.path.join(path, 'replay', str(self.replay_buffer_id))
+        dir='/home/game/jan/buffer'
         print('Loading from ', dir, ' ...')
         assert os.path.exists(dir)
 
@@ -85,48 +53,41 @@ class ReplayBuffer(object):
         if self.reset_prior:
             self.priorities = np.ones_like(self.priorities)
 
-        self.game_look_up = np.load(
-            os.path.join(dir, 'game_look_up.npy')).tolist()
-        self.base_idx, buffer_len = np.load(
-            os.path.join(dir, 'utils.npy')).tolist()
+        self.game_look_up = np.load(os.path.join(dir, 'game_look_up.npy')).tolist()
+        self.base_idx, buffer_len = np.load(os.path.join(dir, 'utils.npy')).tolist()
 
         assert len(self.priorities) == len(self.game_look_up)
         assert self.game_look_up[-1][0] == self.base_idx + buffer_len - 1
 
         env = self.config.new_game(0)
-        ls = time.time()
-        gamebuffer = d2 = np.load(os.path.join(
-            dir, "gamebuffer.npy"), allow_pickle=True).item()
+        ls=time.time()
+        gamebuffer=d2=np.load(os.path.join(dir, "gamebuffer.npy"), allow_pickle=True).item()
 
-        print("load game buffer takes {}".format(time.time()-ls), flush=True)
+        print("load game buffer takes {}".format(time.time()-ls),flush=True)
         for i in tqdm(range(buffer_len)):
-            game = GameHistory(
-                env.env.action_space, max_length=self.config.history_length, config=self.config)
+            game = GameHistory(env.env.action_space, max_length=self.config.history_length, config=self.config)
             game.load_file(gamebuffer[str(i)])
             self.buffer.append(game)
 
         print('Load Over.')
 
-    def save_files(self, id):
+    def save_files(self,id):
         dir = os.path.join(self.config.exp_path, 'replay', str(id))
         print('dir: ', dir)
         if not os.path.exists(dir):
             os.makedirs(dir)
-        # print(dir)
 
         np.save(os.path.join(dir, 'prior.npy'), np.array(self.priorities))
-        np.save(os.path.join(dir, 'game_look_up.npy'),
-                np.array(self.game_look_up))
-        np.save(os.path.join(dir, 'utils.npy'), np.array(
-            [self.base_idx, len(self.buffer)]))
+        np.save(os.path.join(dir, 'game_look_up.npy'), np.array(self.game_look_up))
+        np.save(os.path.join(dir, 'utils.npy'), np.array([self.base_idx, len(self.buffer)]))
 
-        st = time.time()
-        buffer_dict = {}
+
+        st=time.time()
+        buffer_dict={}
         for i, game in enumerate(self.buffer):
-            buffer_dict[str(i)] = game.save_file()
-        np.save(os.path.join(dir, 'gamebuffer.npy'), buffer_dict)
-        print("finish saving {} length buffer with {}s".format(
-            len(self.buffer), time.time()-st), flush=True)
+            buffer_dict[str(i)]=game.save_file()
+        np.save(os.path.join(dir,'gamebuffer.npy'), buffer_dict)
+        print("finish saving {} length buffer with {}s".format(len(self.buffer),time.time()-st),flush=True)
 
     def save_pools(self, pools, gap_step):
         if self.make_dataset:
@@ -134,6 +95,9 @@ class ReplayBuffer(object):
             print('Current size: ', buffer_size)
 
         for (game, priorities) in pools:
+            # Only append end game
+            # if end_tag:
+            # print("in save pool,len(game)=",len(game),flush=True )
 
             self.save_game(game, True, gap_step, priorities)
 
@@ -146,18 +110,17 @@ class ReplayBuffer(object):
 
         if priorities is None:
             max_prio = self.priorities.max() if self.buffer else 1
-            self.priorities = np.concatenate((self.priorities, [max_prio for _ in range(
-                valid_len)] + [0. for _ in range(valid_len, len(game))]))
+            self.priorities = np.concatenate((self.priorities, [max_prio for _ in range(valid_len)] + [0. for _ in range(valid_len, len(game))]))
         else:
-            assert len(game) == len(
-                priorities), " priorities should be of same length as the game steps"
+            assert len(game) == len(priorities), " priorities should be of same length as the game steps"
             priorities = priorities.copy().reshape(-1)
+            # priorities[valid_len:len(game)] = 0.
             self.priorities = np.concatenate((self.priorities, priorities))
 
         self.buffer.append(game)
-        self.game_look_up += [(self.base_idx + len(self.buffer) - 1, step_pos)
-                              for step_pos in range(len(game))]
+        self.game_look_up += [(self.base_idx + len(self.buffer) - 1, step_pos) for step_pos in range(len(game))]
 
+        #@wjc
         total = self.get_total_len()
         beg_index = max(total - self.tail_len, 0)
         self.tail_index += [idx for idx in range(beg_index, total)]
@@ -181,14 +144,13 @@ class ReplayBuffer(object):
 
         probs = self.priorities ** _alpha
 
+
         probs /= probs.sum()
 
-        while total <= batch_size:
+        while total <=batch_size:
             time.sleep(1)
-            print("in replay buffer's prepare_batch_context: total={0}, batch_size={1}".format(
-                self.get_total_len(), batch_size), flush=True)
-        indices_lst = np.random.choice(
-            total, batch_size, p=probs, replace=False)
+            print("in replay buffer's prepare_batch_context: total={0}, batch_size={1}".format(self.get_total_len(),batch_size),flush=True)
+        indices_lst = np.random.choice(total, batch_size, p=probs, replace=False)
 
         weights_lst = (total * probs[indices_lst]) ** (-beta)
         weights_lst /= weights_lst.max()
@@ -209,20 +171,6 @@ class ReplayBuffer(object):
         context = (game_lst, game_pos_lst, indices_lst, weights_lst, make_time)
         return context
 
-    def update_games(self, game_idx_lst, current_index_lsts, distributions_lsts, value_lsts, make_times):
-        for (game_idx, current_index_lst, distributions_lst, value_lst, make_time) in zip(game_idx_lst, current_index_lsts, distributions_lsts, value_lsts, make_times):
-            self.update_game(game_idx, current_index_lst,
-                             distributions_lst, value_lst, make_time)
-
-    def update_game(self, game_idx, current_index_lst, distributions_lst, value_lst, make_time):
-        for i in range(len(make_time)):
-            if make_time[i] > self.clear_time:
-                game_id, game_pos = self.game_look_up[game_idx]
-                game_id -= self.base_idx
-                game = self.buffer[game_id]
-                game.store_search_stats(
-                    distributions_lst[i], value_lst[i], current_index_lst[i], set_flag=True)
-
     def update_priorities(self, batch_indices, batch_priorities, make_time):
         for i in range(len(batch_indices)):
             if make_time[i] > self.clear_time:
@@ -234,12 +182,11 @@ class ReplayBuffer(object):
 
         total_transition = self.get_total_len()
         if total_transition > self.transition_top:
-            print('Remove fit part, current size(len(buffer)): {0}, total_transition(len(priority)): {1}/1e5 '.format(
-                current_size, self.get_total_len()), flush=True)
+            print('Remove fit , current size(len(buffer)): {0}, total_transition(len(priority)): {1}/1e5 '.format(current_size,self.get_total_len()),flush=True)
             index = 0
             for i in range(current_size):
                 total_transition -= len(self.buffer[i])
-                if total_transition <= self.transition_top * self.keep_ratio:  # @wjc, <= to =
+                if total_transition <= self.transition_top * self.keep_ratio:
                     index = i
                     break
 
@@ -247,8 +194,7 @@ class ReplayBuffer(object):
                 self._remove(index + 1)
 
     def _remove(self, num_excess_games):
-        excess_games_steps = sum([len(game)
-                                 for game in self.buffer[:num_excess_games]])
+        excess_games_steps = sum([len(game) for game in self.buffer[:num_excess_games]])
         del self.buffer[:num_excess_games]
         self.priorities = self.priorities[excess_games_steps:]
         del self.game_look_up[:excess_games_steps]

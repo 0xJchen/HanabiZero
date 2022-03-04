@@ -117,6 +117,7 @@ class HanabiEnv(Environment):
               "observation_type":pyhanabi.AgentObservationType.CARD_KNOWLEDGE.value,
               "seed":seed
           }
+
     elif args["hanabi_name"] == 'Hanabi-Small':
         config={
                "colors":2,
@@ -134,7 +135,6 @@ class HanabiEnv(Environment):
     assert isinstance(config, dict), "Expected config to be of type dict."
 
     self.game = pyhanabi.HanabiGame(config)
-
     self.observation_encoder = pyhanabi.ObservationEncoder(
         self.game, pyhanabi.ObservationEncoderType.CANONICAL)
     self.players = self.game.num_players()
@@ -245,7 +245,6 @@ class HanabiEnv(Environment):
                                   'num_players': 2,
                                   'vectorized': [ 0, 0, 1, ... ]}]}
     """
-    # available_actions=[0 for i in range(self.num_moves())]
     if choose:
         self.state = self.game.new_initial_state()
 
@@ -266,7 +265,6 @@ class HanabiEnv(Environment):
         obs = np.zeros((self.vectorized_observation_shape()[0]+self.players))
         share_obs = np.zeros((self.vectozed_share_observation_shape()[0]+self.players))
     return share_obs[0],obs, list(available_actions)
-    #return obs, list(available_actions)
   def vectorized_observation_shape(self):
     """Returns the shape of the vectorized observation.
 
@@ -400,7 +398,6 @@ class HanabiEnv(Environment):
       AssertionError: When an illegal action is provided.
     """
     if isinstance(action, dict):
-      # Convert dict action HanabiMove
       action = self._build_move(action)
     elif isinstance(action, int):
       if action == -1:# invalid action
@@ -441,8 +438,8 @@ class HanabiEnv(Environment):
     rewards = self.state.score() - last_score
     # rewards = reward
     infos = {'score':self.state.score()}
-    return share_obs[0],obs, rewards, done, infos, list(available_actions)
-   # return obs, rewards, done, infos, list(available_actions)
+    # return share_obs[0], rewards, done, infos, list(available_actions)
+    return share_obs[0], obs, rewards, done, infos, list(available_actions)
   def _make_observation_all_players(self):
     """Make observation for all players.
 

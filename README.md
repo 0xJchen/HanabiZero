@@ -9,27 +9,28 @@ Direcly train with global-state or oracle-regression (we proposed) reaches ~ 24/
 ## Train
 
 ```
-python3 ../main.py --env Hanabi-Full --case hanabi --opr train --seed 10 --num_gpus 4 --num_cpus 110 --force\
-  --cpu_actor 6 --gpu_actor 16 \
-  --p_mcts_num 24\
-  --extra 2022 \
+#set -ex
+export CUDA_DEVICE_ORDER='PCI_BUS_ID'
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+python3 main.py --env Hanabi-Small --case hanabi --opr train --seed 1 --num_gpus 4 --num_cpus 96 --force \
+  --cpu_actor 5 --gpu_actor 20 \
+  --p_mcts_num 16\
   --use_priority \
   --use_max_priority \
   --revisit_policy_search_rate 0.999 \
   --amp_type 'torch_amp' \
-  --reanalyze_part 'paper' \
-  --info 'decay_n_op' \
-  --actors 40 \
+  --info 'global-state-full' \
+  --actors 8 \
   --simulations 50 \
   --batch_size 256 \
   --val_coeff 0.25 \
   --td_step 5 \
   --debug_interval 100 \
-  --lr 0.1 \
-  --decay_rate 0.1 \
+  --decay_rate 1\
   --decay_step 200000 \
-  --stack 1 \
-  --optim 'sgd' 
+  --lr 0.1 \
+  --stack 4 \
+  --mdp_type 'global'
 ```
 
 Some tweaking parameters:
@@ -40,8 +41,9 @@ Some tweaking parameters:
 - network architecture: using larger model (over-parameterized) `representation, dynamics, prediction` modules lead to faster convergence.
 - actors: # of parallel actors to collect experience. Restricted by the GPU memory.
 - `gpu_num` in `reanal.py:15`. Currently, `actor` and `worker` share the same amount of gpu determined by `gpu_num`. On `RTX 3090` the most compatible budget is `0.06/card`
-- learning rate `lr` and decay `decay_rate`, `decay_step`. First using large lr `0.1`, then gradually decay. In practice, I found it stuck at game score (15/25, known as a policy saddle point also observed in other hanabi algorithms). Decay it by `0.1` gradually lead to imrpoved performance. When capped at `0.0001`, the agent is capable of reaching `23/25`.
+- learning rate `lr` and decay `decay_rate`, `decay_step`. First using large lr `0.1`, then gradually decay. In practice, I found it stuck at game score (15/25, known as a policy saddle point also observed in other hanabi algorithms). Decay it by `0.1` gradually lead to imrpoved performance. When capped at `0.0001`, the agent is capable of reaching `24/25`.
 - stacked frame `stack`. While tackling the problem of partial observability, stack image requires a larger representation network. When using global regression-like techniques or simply testing with global observation, no stacking image works fine. Note, there are 2 successful hanabi algorithms: `[R2D2](https://github.com/facebookresearch/hanabi_SAD/tree/main/pyhanabi)` uses RNN for state representation while `MAPPO` uses single frame as input state. On the other hand, by default using global state for debugging now. Simly using local state not seems to work here. 
+- mdp_type either 'global' or 'local', corresponds to MDP or POMDP setting of Hanabi
 - optimizer `optim`. I found `rmsprop` not working, `sgd` is enough. `adam` may stuck at local optim when squeezing the last performance. Other techniques like `cos annealing, cyclic lr` are possible alternative choices.
 
 Other supported modes (besides `train`) including: 1. load a model then test. 2. save snapshot of `replay buffer` and `optimizer` during training 3. load these snapshots and continue training. The Logging directory can be found automatically with `sh eval.sh`, which takes `info`'s value in the script as input.

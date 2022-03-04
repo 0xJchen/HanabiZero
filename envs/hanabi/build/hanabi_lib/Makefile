@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi
+CMAKE_SOURCE_DIR = /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build
+CMAKE_BINARY_DIR = /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -80,14 +80,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build/CMakeFiles /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build/hanabi_lib/CMakeFiles/progress.marks
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build/CMakeFiles 0
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build/CMakeFiles /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build/hanabi_lib/CMakeFiles/progress.marks
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/clean
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/clean
 .PHONY : clean
 
 # The main clean target
@@ -97,22 +97,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/preinstall
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/preinstall
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 hanabi_lib/CMakeFiles/hanabi.dir/rule:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/CMakeFiles/hanabi.dir/rule
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f CMakeFiles/Makefile2 hanabi_lib/CMakeFiles/hanabi.dir/rule
 .PHONY : hanabi_lib/CMakeFiles/hanabi.dir/rule
 
 # Convenience name for target.
@@ -122,7 +122,7 @@ hanabi: hanabi_lib/CMakeFiles/hanabi.dir/rule
 
 # fast build rule for target.
 hanabi/fast:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/build
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/build
 .PHONY : hanabi/fast
 
 canonical_encoders.o: canonical_encoders.cc.o
@@ -131,7 +131,7 @@ canonical_encoders.o: canonical_encoders.cc.o
 
 # target to build an object file
 canonical_encoders.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/canonical_encoders.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/canonical_encoders.cc.o
 .PHONY : canonical_encoders.cc.o
 
 canonical_encoders.i: canonical_encoders.cc.i
@@ -140,7 +140,7 @@ canonical_encoders.i: canonical_encoders.cc.i
 
 # target to preprocess a source file
 canonical_encoders.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/canonical_encoders.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/canonical_encoders.cc.i
 .PHONY : canonical_encoders.cc.i
 
 canonical_encoders.s: canonical_encoders.cc.s
@@ -149,7 +149,7 @@ canonical_encoders.s: canonical_encoders.cc.s
 
 # target to generate assembly for a file
 canonical_encoders.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/canonical_encoders.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/canonical_encoders.cc.s
 .PHONY : canonical_encoders.cc.s
 
 hanabi_card.o: hanabi_card.cc.o
@@ -158,7 +158,7 @@ hanabi_card.o: hanabi_card.cc.o
 
 # target to build an object file
 hanabi_card.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_card.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_card.cc.o
 .PHONY : hanabi_card.cc.o
 
 hanabi_card.i: hanabi_card.cc.i
@@ -167,7 +167,7 @@ hanabi_card.i: hanabi_card.cc.i
 
 # target to preprocess a source file
 hanabi_card.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_card.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_card.cc.i
 .PHONY : hanabi_card.cc.i
 
 hanabi_card.s: hanabi_card.cc.s
@@ -176,7 +176,7 @@ hanabi_card.s: hanabi_card.cc.s
 
 # target to generate assembly for a file
 hanabi_card.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_card.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_card.cc.s
 .PHONY : hanabi_card.cc.s
 
 hanabi_game.o: hanabi_game.cc.o
@@ -185,7 +185,7 @@ hanabi_game.o: hanabi_game.cc.o
 
 # target to build an object file
 hanabi_game.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_game.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_game.cc.o
 .PHONY : hanabi_game.cc.o
 
 hanabi_game.i: hanabi_game.cc.i
@@ -194,7 +194,7 @@ hanabi_game.i: hanabi_game.cc.i
 
 # target to preprocess a source file
 hanabi_game.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_game.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_game.cc.i
 .PHONY : hanabi_game.cc.i
 
 hanabi_game.s: hanabi_game.cc.s
@@ -203,7 +203,7 @@ hanabi_game.s: hanabi_game.cc.s
 
 # target to generate assembly for a file
 hanabi_game.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_game.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_game.cc.s
 .PHONY : hanabi_game.cc.s
 
 hanabi_hand.o: hanabi_hand.cc.o
@@ -212,7 +212,7 @@ hanabi_hand.o: hanabi_hand.cc.o
 
 # target to build an object file
 hanabi_hand.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_hand.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_hand.cc.o
 .PHONY : hanabi_hand.cc.o
 
 hanabi_hand.i: hanabi_hand.cc.i
@@ -221,7 +221,7 @@ hanabi_hand.i: hanabi_hand.cc.i
 
 # target to preprocess a source file
 hanabi_hand.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_hand.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_hand.cc.i
 .PHONY : hanabi_hand.cc.i
 
 hanabi_hand.s: hanabi_hand.cc.s
@@ -230,7 +230,7 @@ hanabi_hand.s: hanabi_hand.cc.s
 
 # target to generate assembly for a file
 hanabi_hand.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_hand.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_hand.cc.s
 .PHONY : hanabi_hand.cc.s
 
 hanabi_history_item.o: hanabi_history_item.cc.o
@@ -239,7 +239,7 @@ hanabi_history_item.o: hanabi_history_item.cc.o
 
 # target to build an object file
 hanabi_history_item.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_history_item.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_history_item.cc.o
 .PHONY : hanabi_history_item.cc.o
 
 hanabi_history_item.i: hanabi_history_item.cc.i
@@ -248,7 +248,7 @@ hanabi_history_item.i: hanabi_history_item.cc.i
 
 # target to preprocess a source file
 hanabi_history_item.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_history_item.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_history_item.cc.i
 .PHONY : hanabi_history_item.cc.i
 
 hanabi_history_item.s: hanabi_history_item.cc.s
@@ -257,7 +257,7 @@ hanabi_history_item.s: hanabi_history_item.cc.s
 
 # target to generate assembly for a file
 hanabi_history_item.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_history_item.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_history_item.cc.s
 .PHONY : hanabi_history_item.cc.s
 
 hanabi_move.o: hanabi_move.cc.o
@@ -266,7 +266,7 @@ hanabi_move.o: hanabi_move.cc.o
 
 # target to build an object file
 hanabi_move.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_move.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_move.cc.o
 .PHONY : hanabi_move.cc.o
 
 hanabi_move.i: hanabi_move.cc.i
@@ -275,7 +275,7 @@ hanabi_move.i: hanabi_move.cc.i
 
 # target to preprocess a source file
 hanabi_move.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_move.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_move.cc.i
 .PHONY : hanabi_move.cc.i
 
 hanabi_move.s: hanabi_move.cc.s
@@ -284,7 +284,7 @@ hanabi_move.s: hanabi_move.cc.s
 
 # target to generate assembly for a file
 hanabi_move.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_move.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_move.cc.s
 .PHONY : hanabi_move.cc.s
 
 hanabi_observation.o: hanabi_observation.cc.o
@@ -293,7 +293,7 @@ hanabi_observation.o: hanabi_observation.cc.o
 
 # target to build an object file
 hanabi_observation.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_observation.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_observation.cc.o
 .PHONY : hanabi_observation.cc.o
 
 hanabi_observation.i: hanabi_observation.cc.i
@@ -302,7 +302,7 @@ hanabi_observation.i: hanabi_observation.cc.i
 
 # target to preprocess a source file
 hanabi_observation.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_observation.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_observation.cc.i
 .PHONY : hanabi_observation.cc.i
 
 hanabi_observation.s: hanabi_observation.cc.s
@@ -311,7 +311,7 @@ hanabi_observation.s: hanabi_observation.cc.s
 
 # target to generate assembly for a file
 hanabi_observation.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_observation.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_observation.cc.s
 .PHONY : hanabi_observation.cc.s
 
 hanabi_state.o: hanabi_state.cc.o
@@ -320,7 +320,7 @@ hanabi_state.o: hanabi_state.cc.o
 
 # target to build an object file
 hanabi_state.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_state.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_state.cc.o
 .PHONY : hanabi_state.cc.o
 
 hanabi_state.i: hanabi_state.cc.i
@@ -329,7 +329,7 @@ hanabi_state.i: hanabi_state.cc.i
 
 # target to preprocess a source file
 hanabi_state.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_state.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_state.cc.i
 .PHONY : hanabi_state.cc.i
 
 hanabi_state.s: hanabi_state.cc.s
@@ -338,7 +338,7 @@ hanabi_state.s: hanabi_state.cc.s
 
 # target to generate assembly for a file
 hanabi_state.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_state.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/hanabi_state.cc.s
 .PHONY : hanabi_state.cc.s
 
 util.o: util.cc.o
@@ -347,7 +347,7 @@ util.o: util.cc.o
 
 # target to build an object file
 util.cc.o:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/util.cc.o
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/util.cc.o
 .PHONY : util.cc.o
 
 util.i: util.cc.i
@@ -356,7 +356,7 @@ util.i: util.cc.i
 
 # target to preprocess a source file
 util.cc.i:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/util.cc.i
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/util.cc.i
 .PHONY : util.cc.i
 
 util.s: util.cc.s
@@ -365,7 +365,7 @@ util.s: util.cc.s
 
 # target to generate assembly for a file
 util.cc.s:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/util.cc.s
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(MAKE) -f hanabi_lib/CMakeFiles/hanabi.dir/build.make hanabi_lib/CMakeFiles/hanabi.dir/util.cc.s
 .PHONY : util.cc.s
 
 # Help Target
@@ -415,6 +415,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/game/revert/lsy/lst_best_confirm_copy/HanabiZero/envs/hanabi/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/game/revert/lsy/lst_best_confirm_copy/EfficientZero/envs/hanabi/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

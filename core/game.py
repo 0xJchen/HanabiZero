@@ -67,10 +67,9 @@ class GameHistory:
         self.obs_history = []
         self.rewards = []
 
-        # @wjc
+        #@wjc
         self.legal_actions = []
-        self.ks = ['visits', 'root', 'actions', 'obs',
-                   'reward', 'tar_v', 'tar_r', 'tar_p']
+        self.ks=['visits', 'root', 'actions', 'obs', 'reward', 'tar_v', 'tar_r', 'tar_p']
 
     def init(self, init_observations, init_legal_action):
         self.child_visits = []
@@ -83,28 +82,26 @@ class GameHistory:
         self.target_rewards = []
         self.target_policies = []
 
-        # @wjc
+        #@wjc
         self.legal_actions = []
 
         assert len(init_observations) == self.stacked_observations
         for observation in init_observations:
             self.obs_history.append(copy.deepcopy(observation))
 
-        # @wjc
+        #@wjc
         self.legal_actions.append(init_legal_action)
 
     def pad_over(self, next_block_observations, next_block_rewards, next_block_root_values, next_block_child_visits, next_legal_a):
         assert len(next_block_observations) <= self.config.num_unroll_steps
         assert len(next_block_child_visits) <= self.config.num_unroll_steps
-        assert len(
-            next_block_root_values) <= self.config.num_unroll_steps + self.config.td_steps
-        assert len(next_block_rewards) <= self.config.num_unroll_steps + \
-            self.config.td_steps - 1
+        assert len(next_block_root_values) <= self.config.num_unroll_steps + self.config.td_steps
+        assert len(next_block_rewards) <= self.config.num_unroll_steps + self.config.td_steps - 1
 
         # notice: next block observation should start from (stacked_observation - 1) in next trajectory
         for observation in next_block_observations:
             self.obs_history.append(copy.deepcopy(observation))
-
+        #newly added
         for la in next_legal_a:
             self.legal_actions.append(copy.deepcopy(la))
 
@@ -134,13 +131,14 @@ class GameHistory:
         self.actions = gdict['a']
         self.obs_history = ray.put(gdict['o'])
         self.rewards = gdict['r']
-        self.legal_actions = gdict['la']
+        self.legal_actions=gdict['la']
 
     def save_file(self):
 
-        return {'vis': np.array(self.child_visits), 'root': np.array(self.root_values), 'a': np.array(self.actions),
-                'o': np.array(ray.get(self.obs_history)), 'r': np.array(self.rewards), 'tar_v': np.array(self.target_values),
-                'tar_r': np.array(self.target_rewards), 'tar_p': np.array(self.target_policies), 'la': np.array(self.legal_actions)}
+        return {'vis':np.array(self.child_visits), 'root':np.array(self.root_values), 'a':np.array(self.actions),\
+        'o':np.array(ray.get(self.obs_history)), 'r':np.array(self.rewards), 'tar_v':np.array(self.target_values),\
+        'tar_r':np.array(self.target_rewards), 'tar_p':np.array(self.target_policies), 'la':np.array(self.legal_actions) }
+        
 
     def append(self, action, obs, reward, legal_action):
         self.actions.append(action)
@@ -148,22 +146,18 @@ class GameHistory:
         self.rewards.append(reward)
 
         self.legal_actions.append(legal_action)
-
     def obs_object(self):
         return self.obs_history
 
     def obs(self, i, extra_len=0, padding=False):
-        frames = ray.get(self.obs_history)[
-            i:i + self.stacked_observations + extra_len]  # @wjc
-        #frames = self.obs_history[i:i + self.stacked_observations + extra_len]
+        frames = ray.get(self.obs_history)[i:i + self.stacked_observations + extra_len]#@wjc
         if padding:
             pad_len = self.stacked_observations + extra_len - len(frames)
             if pad_len > 0:
                 pad_frames = [frames[-1] for _ in range(pad_len)]
                 frames = np.concatenate((frames, pad_frames))
         if self.config.cvt_string:
-            frames = [str_to_arr(obs, self.config.gray_scale)
-                      for obs in frames]
+            frames = [str_to_arr(obs, self.config.gray_scale) for obs in frames]
         return frames
 
     def zero_obs(self):
@@ -176,8 +170,7 @@ class GameHistory:
         index = len(self.rewards)
         frames = self.obs_history[index:index + self.stacked_observations]
         if self.config.cvt_string:
-            frames = [str_to_arr(obs, self.config.gray_scale)
-                      for obs in frames]
+            frames = [str_to_arr(obs, self.config.gray_scale) for obs in frames]
         return frames
 
     def get_targets(self, i):
@@ -190,8 +183,8 @@ class GameHistory:
         self.child_visits = np.array(self.child_visits)
         self.root_values = np.array(self.root_values)
 
-        # @wjc
-        self.legal_actions = np.array(self.legal_actions)
+        #@wjc
+        self.legal_actions=np.array(self.legal_actions)
 
     def store_search_stats(self, visit_counts, root_value, idx: int = None, set_flag=False):
         if set_flag:
@@ -200,12 +193,10 @@ class GameHistory:
 
         sum_visits = sum(visit_counts)
         if idx is None:
-            self.child_visits.append(
-                [visit_count / sum_visits for visit_count in visit_counts])
+            self.child_visits.append([visit_count / sum_visits for visit_count in visit_counts])
             self.root_values.append(root_value)
         else:
-            self.child_visits[idx] = [visit_count /
-                                      sum_visits for visit_count in visit_counts]
+            self.child_visits[idx] = [visit_count / sum_visits for visit_count in visit_counts]
             self.root_values[idx] = root_value
 
         if set_flag:
@@ -217,6 +208,7 @@ class GameHistory:
             return self.actions
         else:
             return self.actions[:idx]
+
 
     def __len__(self):
         return len(self.actions)
