@@ -134,7 +134,8 @@ class MuZeroNet(BaseMuZeroNet):
         self.action_space_n = action_space_n
         self.feature_size = 512#chengded from 512
         self.hidden_size = 128 #changed from 128
-       # print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
+        #self.tower_depth=2
+        # print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
         #self._representation = nn.Sequential(nn.Linear(input_size, self.feature_size//2),
         #                                     nn.BatchNorm1d(self.feature_size//2),
         #                                     nn.ReLU(),
@@ -147,17 +148,26 @@ class MuZeroNet(BaseMuZeroNet):
         #                                     )
         self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),ResMLP(self.feature_size))
         self._dynamics_state = DynamicNet(self.feature_size, action_space_n)
+        #self._representation=nn.Sequential(EncodeNet(input_size,self.feature_size),
+        #                                   PreActResTower(self.feature_size,self.tower_depth),
+        #                                  )
+        #self._dynamics_state = DynNet(self.feature_size,action_space_n,self.tower_depth)
+        #self._action_embedding=nn.Sequential(nn.Linear(action_space_n,action_space_n),
+        #                                    nn.LayerNorm(self.action_space_n),
+        #                                    nn.ReLU(),
+        #                                    )
+
         self._dynamics_reward = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
-                                              nn.BatchNorm1d(self.hidden_size),
+                                              nn.LayerNorm(self.hidden_size),
                                               nn.ReLU(),
                                               nn.Linear(self.hidden_size, reward_support_size))
 
         self._prediction_actor = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
-                                               nn.BatchNorm1d(self.hidden_size),
+                                               nn.LayerNorm(self.hidden_size),
                                                nn.ReLU(),
                                                nn.Linear(self.hidden_size, action_space_n))
         self._prediction_value = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
-                                               nn.BatchNorm1d(self.hidden_size),
+                                               nn.LayerNorm(self.hidden_size),
                                                nn.ReLU(),
                                                nn.Linear(self.hidden_size, value_support_size))
 
@@ -238,6 +248,8 @@ class MuZeroNet(BaseMuZeroNet):
                                      dtype=torch.float32, device=action.device)
         action_one_hot.scatter_(1, action, 1.0)
 
+        #embed=self._action_embedding(action_one_hot)
+
         x = torch.cat((state, action_one_hot), dim=1)
         next_state = self._dynamics_state(x)
         reward = self._dynamics_reward(next_state)
@@ -255,16 +267,22 @@ class MuZeroNet(BaseMuZeroNet):
 
     def get_params_mean(self):
         return 0, 0, 0, 0
-
+    def num_params(self):
+        def cnt(md):
+            return sum(p.numel() for p in md.parameters())
+        # print("new params")
+        # print("repr={},dyn={},policy={}".format(cnt(self._representationnew),cnt(self._dynamics_statenew),cnt(self._prediction_actornew)))
+        print("params")
+        print("repr={},dyn={},policy={}".format(cnt(self._representation),cnt(self._dynamics_state),cnt(self._prediction_actor)))
 class PreActResBlock(nn.Module):
     def __init__(self, in_dim):
         super(PreActResBlock,self).__init__()
         self.in_dim = in_dim
 
-        self.bn1=nn.BatchNorm1d(in_dim)
+        self.bn1=nn.LayerNorm(in_dim)
         self.fc1=nn.Linear(in_dim, in_dim)
 
-        self.bn2=nn.BatchNorm1d(in_dim)
+        self.bn2=nn.LayerNorm(in_dim)
         self.fc2=nn.Linear(in_dim, in_dim)
 
     def forward(self, x):
@@ -289,7 +307,7 @@ class EncodeNet(nn.Module):
         self.in_dim=in_dim
         self.out_dim=out_dim
         self.fc=nn.Linear(in_dim,out_dim)
-        self.bn=nn.BatchNorm1d(out_dim)
+        self.bn=nn.LayerNorm(out_dim)
 
     def forward(self, x):
         x=self.fc(x)
@@ -338,7 +356,7 @@ class MuZeroNetFull(BaseMuZeroNet):
         # self.init_size= 1024
         # self.actor_hidden = 128
         self.hidden_size = 256
-        self.tower_depth=5
+        self.tower_depth=3
         self.hidden_sec = 128
         # print("=================>init muzero net, repr input_size=%d, action_Size=%d",input_size,action_space_n,flush=True)
 
@@ -409,7 +427,7 @@ class MuZeroNetFull(BaseMuZeroNet):
         # print("new params")
         # print("repr={},dyn={},policy={}".format(cnt(self._representationnew),cnt(self._dynamics_statenew),cnt(self._prediction_actornew)))
         print("params")
-        print("repr={},dyn={},policy={}".format(cnt(self._representation),cnt(self._dynamics_state),cnt(self._prediction_actor)))       
+        print("repr={},dyn={},policy={}".format(cnt(self._representation),cnt(self._dynamics_state),cnt(self._prediction_actor)))
 
     def project(self, hidden_state, with_grad=True):
         proj = self.projection(hidden_state)

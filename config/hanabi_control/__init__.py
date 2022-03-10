@@ -10,13 +10,13 @@ import numpy as np
 class HanabiControlConfig(BaseMuZeroConfig):
     def __init__(self,args):
         super(HanabiControlConfig, self).__init__(
-            training_steps=200000,
+            training_steps=150000,
             last_steps=0,
             test_interval=1000,#changed to 1000
             log_interval=1000,
             vis_interval=1000,
             test_episodes=40,
-            checkpoint_interval=1000,
+            checkpoint_interval=100,
             target_model_interval=200,#changed from 1k @wjc
             save_ckpt_interval=10000,
             max_moves=60,#@wjc
@@ -40,13 +40,13 @@ class HanabiControlConfig(BaseMuZeroConfig):
             cvt_string=False,
             image_based=False,
             # lr scheduler
-            lr_warm_up=0.01,
+            lr_warm_up=0.001,
             lr_type='step',
             lr_init=args.lr,
             lr_decay_rate=args.decay_rate,
-            lr_decay_steps=20000,
+            lr_decay_steps=args.decay_step,
             # replay window
-            start_window_size=10000,#@wjc mannualy changed from 40 to 1 for debugging
+            start_window_size=20,#@wjc mannualy changed from 40 to 1 for debugging
             window_size=125000,#useless
             transition_num=1,
             # frame skip & stack observation
@@ -59,7 +59,9 @@ class HanabiControlConfig(BaseMuZeroConfig):
             reward_loss_coeff=1,
             value_loss_coeff=args.val_coeff,
             policy_loss_coeff=1,
-            # value reward support
+            debug_batch=args.debug_batch,
+            debug_interval=args.debug_interval,
+        # value reward support
             value_support=DiscreteSupport(-25, 25, delta=1),
             reward_support=DiscreteSupport(-25, 25, delta=1))#@wjc what?
 
@@ -158,7 +160,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             log_interval=1000,
             vis_interval=1000,
             test_episodes=80,
-            checkpoint_interval=2000,
+            checkpoint_interval=500,
             target_model_interval=200,
             save_ckpt_interval=10000,
             max_moves=160,#@wjc
@@ -188,7 +190,7 @@ class HanabiControlConfigFull(BaseMuZeroConfig):
             lr_decay_rate=args.decay_rate,
             lr_decay_steps=args.decay_step,#changed from 0.5m
             # replay window
-            start_window_size=80,#@wjc mannualy changed to 10(final model) for debugging
+            start_window_size=100,#@wjc mannualy changed to 10(final model) for debugging
             window_size=125000,
             transition_num=1,
             # frame skip & stack observation

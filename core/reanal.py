@@ -445,9 +445,12 @@ class BatchWorker_GPU(object):
                 time.sleep(2)
                 # time.sleep(5)
                 continue
-            trained_steps = ray.get(self.storage.get_counter.remote())
-            if trained_steps >= self.config.training_steps + self.config.last_steps:
-                time.sleep(30)
-                break
+            st=time.time()
+            #trained_steps = ray.get(self.storage.get_counter.remote())
+            #if trained_steps >= self.config.training_steps + self.config.last_steps:
+            #    time.sleep(30)
+            #    break
 
             self._prepare_target_gpu()
+            #if self.worker_id==1:
+            #    print("GPU analyzer {} finished in {}".format(self.worker_id,time.time()-st),flush=True)

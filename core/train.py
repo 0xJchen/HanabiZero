@@ -435,7 +435,7 @@ class DataWorker(object):
                 self_play_visit_entropy = []
                 depth_distribution = []
                 visit_count_distribution = []
-
+                dw_st=time.time()
                 while not dones.all() and (step_counter <= self.config.max_moves * self.config.self_play_moves_ratio):
                     # if self_play_episodes %2 ==0:
                         # print("parallel env={0},in dataworker, played {1} trajectory already".format(env_nums,self_play_episodes),flush=True)
@@ -697,17 +697,17 @@ class DataWorker(object):
                                                                 visit_entropies, 0,
                                                                 {'depth': depth_distribution,
                                                                  'visit': visit_count_distribution})
-
+                #print("Dataworker {} finish one cycle in {}s, avg length={}".format(self.rank,time.time()-dw_st,np.average(np.array(eps_steps_lst)) ),flush=True)
 def sanity_check(arr,name):
     arr=np.array(arr)
     nan_p=np.isnan(arr)
 
     if np.any(nan_p):
         print("{} contains nan".format(name),flush=True)
-def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_result=False):
+def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_result=False, stp=None):
     #total_transitions = ray.get(replay_buffer.get_total_len.remote())
     total_transitions=0
-
+    uw_st=time.time()
     inputs_batch, targets_batch = batch
     obs_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time = inputs_batch
     target_reward, target_value, target_policy = targets_batch
@@ -746,7 +746,8 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     batch_size = obs_batch.size(0)
     assert batch_size == config.batch_size == target_reward.size(0)
     metric_loss = torch.nn.L1Loss()
-
+    #if stp %50 ==0:
+    #    print("grad prep in [{}]s".format(time.time()-uw_st),flush=True)
     # transform targets to categorical representation
     # Reference:  Appendix F
     other_log = {}
@@ -919,7 +920,8 @@ def update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_r
     reward_priority = np.mean(reward_priority, 0)
     new_priority = (1 - config.priority_reward_ratio) * value_priority + config.priority_reward_ratio * reward_priority
     replay_buffer.update_priorities.remote(indices, new_priority, make_time)
-
+    #if stp  % 50 ==0:
+    #    print("one update total in {}s".format(time.time()-uw_st),flush=True)
     # packing data for logging
     loss_data = (total_loss.item(), weighted_loss.item(), loss.mean().item(), 0, policy_loss.mean().item(),
                  reward_loss.mean().item(), value_loss.mean().item(), consistency_loss.mean())
@@ -1014,18 +1016,20 @@ def add_batch(batch, m_batch):
 
 
 class BatchStorage(object):
-    def __init__(self, threshold=15, size=20,name=''):#8,16
+    def __init__(self, threshold=15, size=20,name='',debug=False):#8,16
         self.threshold = threshold
         self.batch_queue = Queue(maxsize=size)
         self.name=name
-
+        self.debug=debug
     def push(self, batch):
         if self.batch_queue.qsize() <= self.threshold:
             self.batch_queue.put(batch)
         else:
-            pass
-            #print(self.name+"full",flush=True)
-
+            #pass
+            if self.debug:
+                print(self.name+"full",flush=True)
+            else:
+                pass
     def pop(self):
         if self.batch_queue.qsize() > 0:
             return self.batch_queue.get()
@@ -1207,7 +1211,7 @@ class BatchWorker(object):
 
         return batch
 
-
+#@profile
 def _train(model, target_model, latest_model, config, shared_storage, replay_buffer, batch_storage, summary_writer, snapshot):
 
     # ----------------------------------------------------------------------------------
@@ -1226,6 +1230,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     #assert os.path.exists(op_path)
     #model.load_state_dict(torch.load(md_path))
     #print("finish loading model")
+
     optimizer = optim.SGD(model.parameters(), lr=config.lr_init, momentum=config.momentum,
                            weight_decay=config.weight_decay)
 
@@ -1239,7 +1244,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
     # else:
     #     optimizer = optim.SGD(model.parameters(), lr=config.lr_init, momentum=config.momentum,
     #                       weight_decay=config.weight_decay)
-    #optimizer = optim.Adam(model.parameters(),lr=config.lr_init,eps=1e-5)
+    #optimizer = optim.Adam(model.parameters(),lr=1e-4,weight_decay=2e-5)
 
 
     if config.amp_type == 'nvidia_apex':
@@ -1334,7 +1339,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         if config.amp_type == 'torch_amp':
             if step_count >= 1:
                 scaler = scaler_prev
-            log_data = update_weights(model, batch, optimizer, replay_buffer, config, scaler, True)
+            log_data = update_weights(model, batch, optimizer, replay_buffer, config, scaler, True,step_count)
             scaler_prev = log_data[3]
         else:
             log_data = update_weights(model, batch, optimizer, replay_buffer, config, scaler, vis_result)
