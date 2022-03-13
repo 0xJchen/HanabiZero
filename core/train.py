@@ -1023,8 +1023,8 @@ class BatchStorage(object):
         if self.batch_queue.qsize() <= self.threshold:
             self.batch_queue.put(batch)
         else:
-            pass
-            # print(self.name+"full",flush=True)
+            # pass
+            print(self.name+"full",flush=True)
 
     def pop(self):
         if self.batch_queue.qsize() > 0:
@@ -1287,7 +1287,7 @@ def _train(model, target_model, latest_model, config, shared_storage, replay_buf
         batch = batch_storage.pop()
         # before_btch=time.time()
         if batch is None:
-            time.sleep(0.5)#0.3->2
+            time.sleep(1)#0.3->2
             # if _debug_batch:
             print("LEARNER WAITING!",flush=True)
             continue
@@ -1375,6 +1375,8 @@ def _test(config, shared_storage):
 
 def train(config, summary_writer=None, model_path=None):
     model = config.get_uniform_network()
+    #model stats:
+    model.num_params()
     target_model = config.get_uniform_network()
     latest_model = config.get_uniform_network()
     #assert model_path is not None

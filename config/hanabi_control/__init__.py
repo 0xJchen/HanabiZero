@@ -16,7 +16,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
             log_interval=1000,
             vis_interval=1000,
             test_episodes=40,
-            checkpoint_interval=1000,
+            checkpoint_interval=400,
             target_model_interval=200,#changed from 1k @wjc
             save_ckpt_interval=10000,
             max_moves=60,#@wjc
@@ -46,7 +46,7 @@ class HanabiControlConfig(BaseMuZeroConfig):
             lr_decay_rate=args.decay_rate,
             lr_decay_steps=20000,
             # replay window
-            start_window_size=10000,#@wjc mannualy changed from 40 to 1 for debugging
+            start_window_size=20,#@wjc mannualy changed from 40 to 1 for debugging
             window_size=125000,#useless
             transition_num=1,
             # frame skip & stack observation

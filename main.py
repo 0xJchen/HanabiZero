@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--target_moving_average', action='store_true', default=False,
                         help='Use moving average target model or not')
     # parser.add_argument('--priority_top', type=float, default=np.inf, help='max priority value')
-    parser.add_argument('--test_episodes', type=int, default=32,
+    parser.add_argument('--test_episodes', type=int, default=1000,
                         help='Evaluation episode count (default: %(default)s)')
     parser.add_argument('--reanalyze_part', type=str, default='none', help='reanalyze part',
                         choices=['none', 'value', 'policy', 'paper', 'all'])
@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     if args.opr == 'train':
         ray.init(num_gpus=args.num_gpus, num_cpus=args.num_cpus,
-              object_store_memory=20*1024*1024*1024,dashboard_port=8265, dashboard_host='0.0.0.0')
+              object_store_memory=30*1024*1024*1024,dashboard_port=8265, dashboard_host='0.0.0.0')
                 #   object_store_memory=200*1024*1024*1024, dashboard_port=9999,dashboard_host='0.0.0.0'  )
 		#object_store_memory=150 * 1024 * 1024 * 1024)
     else:
@@ -176,20 +176,21 @@ if __name__ == '__main__':
                 print("loading my model!")
                 model_path = args.model_path
             parent_model_path=model_path
-            test_range=[1] if (args.test_start==1) else np.arange(args.test_start,args.test_end)
+            #test_range=[1] if (args.test_start==1) else np.arange(args.test_start,args.test_end)
             #test_range=[107,108,75,76]
-            test_range=[107,76]
+            test_range=[6]
             for idx in test_range:
                 model_path=parent_model_path+"/model_"+str(int(idx*10000))+".p"
                 assert os.path.exists(model_path), 'model not found at {}'.format(model_path)
 
                 model = muzero_config.get_uniform_network().to('cuda')
-                # for name, param in model.named_parameters():
-                #     print(name,param.shape)
+             #   for name, param in model.named_parameters():
+             #       print(name,param.shape)
+
                 new_model=torch.load(model_path)
-                # print("====>",type(new_model))
-                # for k,v in new_model.items():
-                #     print(k,v.shape)
+            #    print("====>",type(new_model))
+            #    for k,v in new_model.items():
+            #        print(k,v.shape)
                 model.load_state_dict(torch.load(model_path, map_location=torch.device('cuda')))
                 test_score, test_path = test(muzero_config, model, 0, args.test_episodes, device='cuda', render=False,save_video=False, final_test=True)
                 mean_score = sum(test_score) / len(test_score)
@@ -197,7 +198,7 @@ if __name__ == '__main__':
                 # logging.getLogger('test').info('Test Score: {}'.format(test_score))
                 # logging.getLogger('test').info('Test Mean Score: {}'.format(mean_score))
                 # logging.getLogger('test').info('Saving video in path: {}'.format(test_path))
-            model, weights = test_mcts(muzero_config, summary_writer, model_path)
+            # model, weights = test_mcts(muzero_config, summary_writer, model_path)
         elif args.opr == 'pytest':
             assert args.load_model
             if args.model_path is None:
@@ -213,7 +214,7 @@ if __name__ == '__main__':
                 model = muzero_config.get_uniform_network().to('cuda')
                 # for name, param in model.named_parameters():
                 #     print(name,param.shape)
-                new_model=torch.load(model_path)
+                #new_model=torch.load(model_path)
                 # print("====>",type(new_model))
                 # for k,v in new_model.items():
                 #     print(k,v.shape)

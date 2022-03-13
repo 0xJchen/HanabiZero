@@ -3,6 +3,69 @@ import torch.nn as nn
 
 from core.model import BaseMuZeroNet
 
+class BasicBlock(nn.Module):
+    def __init__(self, in_dim):
+        super(BasicBlock, self).__init__()
+        self.in_dim = in_dim
+        self.fc1 = nn.Linear(in_dim, in_dim)
+        self.bn1 = nn.BatchNorm1d(in_dim)
+
+        self.fc2 = nn.Linear(in_dim, in_dim)
+        self.bn2 = nn.BatchNorm1d(in_dim)
+
+    def forward(self, x):
+        _x = x
+
+        x = self.fc1(x)
+        x = self.bn1(x)
+        x = nn.functional.relu(x)
+
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x += _x
+
+        x = nn.functional.relu(x)
+        return x
+
+class DownSampleBlock(nn.Module):
+    def __init__(self, in_dim, out_dim):
+        super(DownSampleBlock, self).__init__()
+        self.in_dim = in_dim
+        self.out_dim=out_dim
+        self.downsample=nn.Sequential(nn.Linear(in_dim,out_dim),nn.BatchNorm1d(out_dim))
+
+        self.fc1 = nn.Linear(in_dim, out_dim)
+        self.bn1 = nn.BatchNorm1d(out_dim)
+
+        self.fc2 = nn.Linear(out_dim, out_dim)
+        self.bn2 = nn.BatchNorm1d(out_dim)
+
+    def forward(self, x):
+        _x = self.downsample(x)
+
+        x = self.fc1(x)
+        x = self.bn1(x)
+        x = nn.functional.relu(x)
+
+        x = self.fc2(x)
+        x = self.bn2(x)
+
+        x += _x
+        x = nn.functional.relu(x)
+        
+        return x
+
+class ResNet(nn.Module):
+    def __init__(self, in_dim, out_dim, repeat=1):
+        super(ResNet, self).__init__()
+        self.in_dim = in_dim
+        self.out_dim=out_dim
+        self.block1=DownSampleBlock(in_dim, out_dim)
+        self.block2=nn.Sequential(*[BasicBlock(out_dim) for _ in range(repeat)])
+    def forward(self,x):
+        x=self.block1(x)
+        x=self.block2(x)
+        return x
 
 class ResMLP(nn.Module):
     def __init__(self, in_dim):
@@ -145,6 +208,7 @@ class MuZeroNet(BaseMuZeroNet):
         #                                     )
         self._representation = nn.Sequential(nn.Linear(input_size,self.feature_size),nn.BatchNorm1d(self.feature_size),nn.ReLU(),ResMLP(self.feature_size))
         self._dynamics_state = DynamicNet(self.feature_size, action_space_n)
+        # self._dynamics_state = ResNet(self.feature_size + action_space_n, self.feature_size)
         self._dynamics_reward = nn.Sequential(nn.Linear(self.feature_size, self.hidden_size),
                                               nn.BatchNorm1d(self.hidden_size),
                                               nn.ReLU(),
@@ -252,6 +316,13 @@ class MuZeroNet(BaseMuZeroNet):
 
     def get_params_mean(self):
         return 0, 0, 0, 0
+
+    def num_params(self):
+        def cnt(md):
+            return sum(p.numel() for p in md.parameters())
+        print("params",cnt(self))
+        print("repr={},dyn={},policy={}".format(cnt(self._representation),cnt(self._dynamics_state),cnt(self._prediction_actor)))
+
 
 class MuZeroNetFull(BaseMuZeroNet):
     def __init__(self, input_size, action_space_n, reward_support_size, value_support_size,
